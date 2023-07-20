@@ -12,7 +12,7 @@ if (!GITHUB_SECRET) {
   throw new Error("GITHUB_CLIENT_SECRET not defined in environment");
 }
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
       clientId: GITHUB_CLIENT_ID,
@@ -21,7 +21,6 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      console.log("redirect", url, baseUrl);
       // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       // Allows callback URLs on the same origin
@@ -29,12 +28,10 @@ export const authOptions: NextAuthOptions = {
       return baseUrl;
     },
     signIn(params) {
-      console.log("sign in", params);
       return true;
     },
 
     session({ session, token, user }) {
-      console.log({ session, token, user });
       return {
         ...session,
         user: {
@@ -45,10 +42,11 @@ export const authOptions: NextAuthOptions = {
     },
 
     jwt({ token, profile, trigger }) {
-      console.log("jwt", { token, profile, trigger });
+      const username =
+        profile && "login" in profile ? profile.login : profile?.email;
 
       if (trigger === "signIn") {
-        return { ...token, username: profile?.login };
+        return { ...token, username };
       }
 
       return token;

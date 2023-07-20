@@ -20,7 +20,7 @@ export const Chat: React.FC<{
     host,
     async onOpen(event) {
       // identify user in the partykit room
-      const req = await fetch("/api/auth/token");
+      const req = await fetch("/api/session");
       const res = await req.json();
       if (res.session && res.csrf) {
         (event.target as PartySocket).send(
