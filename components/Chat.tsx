@@ -3,6 +3,7 @@
 import { FormEventHandler, useState } from "react";
 import usePartySocket from "partysocket/react";
 import PartySocket from "partysocket";
+import { getCsrfToken } from "next-auth/react";
 
 const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST;
 if (!host) {
@@ -22,12 +23,13 @@ export const Chat: React.FC<{
       // identify user in the partykit room
       const req = await fetch("/api/session");
       const res = await req.json();
-      if (res.session && res.csrf) {
+      const csrf = await getCsrfToken();
+      if (res.session) {
         (event.target as PartySocket).send(
           JSON.stringify({
             type: "identify",
             session: res.session,
-            csrf: res.csrf,
+            csrf: csrf,
           })
         );
       }

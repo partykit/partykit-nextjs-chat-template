@@ -10,6 +10,7 @@ export default {
   async onMessage(message, socket, room) {
     const reply = (response: MessageEvent) =>
       socket.send(JSON.stringify(response));
+
     const connection: typeof socket & {
       user?: {
         username: string;
