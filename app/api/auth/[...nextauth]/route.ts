@@ -19,26 +19,6 @@ const authOptions: NextAuthOptions = {
       clientSecret: GITHUB_SECRET,
     }),
   ],
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: true,
-      },
-    },
-    csrfToken: {
-      name: `next-auth.csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: true,
-      },
-    },
-  },
   callbacks: {
     async redirect({ url, baseUrl }) {
       // Allows relative callback URLs
