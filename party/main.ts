@@ -1,20 +1,23 @@
 import { PartyKitConnection, PartyKitServer } from "partykit/server";
-import { authenticateSession } from "./authenticateSession";
+import { User, authenticateUserSession, getUserSession } from "./utils/auth";
 
 type MessageEvent =
-  | { type: "identify"; session: string; csrf: string }
-  | { type: "message"; text: string }
+  | {
+      type: "identify";
+      sessionToken: string;
+      csrfToken: string;
+      username: string;
+    }
+  | { type: "message"; text: string; sender: User }
   | { type: "error"; text: string };
 
 type Connection = PartyKitConnection & {
-  user?: {
-    username: string;
-  };
+  username?: string;
 };
 
 export default {
   onConnect(connection: Connection) {
-    connection.user = (connection.deserializeAttachment() ?? {}).user;
+    connection.username = (connection.deserializeAttachment() ?? {}).username;
   },
 
   async onMessage(message, connection: Connection, room) {
@@ -23,7 +26,6 @@ export default {
 
     const event = JSON.parse(message as string) as MessageEvent;
 
-    console.log("event", event.type, message);
     if (event.type === "identify") {
       if (typeof room.env.NEXT_APP_URL !== "string") {
         return reply({
@@ -32,30 +34,34 @@ export default {
         });
       }
 
-      const user = await authenticateSession(
-        room.env.NEXT_APP_URL,
-        event.session,
-        event.csrf
-      );
-
-      console.log("user", user);
-
+      const user = await authenticateUserSession(room, event);
       if (user) {
-        connection.user = user;
+        connection.username = user.username;
         connection.serializeAttachment({
           ...(connection.deserializeAttachment() ?? {}),
-          user,
+          username: user.username,
         });
 
-        reply({ type: "message", text: `Welcome ${user.username}` });
+        reply({
+          type: "message",
+          text: `Welcome ${user.username}`,
+          sender: {
+            username: "system",
+          },
+        });
       } else {
         reply({ type: "error", text: "No user found" });
       }
     }
 
     if (event.type === "message") {
-      if (connection.user) {
-        room.broadcast(message as string);
+      const user = connection.username
+        ? await getUserSession(room, connection.username)
+        : null;
+
+      if (user) {
+        const message = { ...event, sender: user };
+        room.broadcast(JSON.stringify(message));
       } else {
         reply({ type: "error", text: "Unauthenticated" });
       }

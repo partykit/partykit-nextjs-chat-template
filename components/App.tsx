@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 
 export const App = () => {
   const session = useSession();
+
   return (
     <main>
       <Chat
@@ -18,7 +19,7 @@ export const App = () => {
         )}
       />
       <section>
-        {session.data?.user?.email ? (
+        {session.data?.user ? (
           <a href="/api/auth/signout" className="underline">
             Sign out
           </a>

@@ -3,6 +3,7 @@
   "name": "partykit-nextjs-chat-template",
   "parties": {
     "chatroom": "party/chatRoom.ts",
-    "chatrooms": "party/chatRooms.ts"
+    "chatrooms": "party/chatRooms.ts",
+    "session": "party/session.ts"
   }
 }

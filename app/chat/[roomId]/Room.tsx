@@ -47,7 +47,8 @@ export const Room: React.FC<{
       </div>
       <form onSubmit={handleSubmit} className="sticky bottom-0">
         <input
-          className="text-white dark:text-black px-1"
+          placeholder="Send message..."
+          className="px-1 bg-slate-200"
           type="text"
           name="message"
         ></input>

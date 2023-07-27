@@ -15,7 +15,6 @@ export const Chat: React.FC<{
   render: (messages: string[]) => React.ReactNode;
 }> = ({ room, render }) => {
   const [messages, setMessages] = useState<string[]>([]);
-
   const socket = usePartySocket({
     room,
     host,
@@ -23,13 +22,14 @@ export const Chat: React.FC<{
       // identify user in the partykit room
       const req = await fetch("/api/session");
       const res = await req.json();
-      const csrf = await getCsrfToken();
-      if (res.session) {
+      const csrfToken = await getCsrfToken();
+      if (res.sessionToken && res.session) {
         (event.target as PartySocket).send(
           JSON.stringify({
             type: "identify",
-            session: res.session,
-            csrf: csrf,
+            username: res.session.username,
+            sessionToken: res.sessionToken,
+            csrfToken: csrfToken,
           })
         );
       }
@@ -38,7 +38,10 @@ export const Chat: React.FC<{
     onMessage(event: MessageEvent<string>) {
       const message = JSON.parse(event.data);
       if (message.type === "message") {
-        setMessages((messages) => [...messages, message.text]);
+        setMessages((messages) => [
+          ...messages,
+          `${message.sender.username}: ${message.text}`,
+        ]);
       }
       if (message.type === "error") {
         setMessages((messages) => [...messages, "ERROR :: " + message.text]);
@@ -58,9 +61,10 @@ export const Chat: React.FC<{
   return (
     <div>
       <div>{render(messages)}</div>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="py-2">
         <input
-          className="text-white dark:text-black px-1"
+          placeholder="Send message..."
+          className="px-1 bg-slate-200"
           type="text"
           name="message"
         ></input>
