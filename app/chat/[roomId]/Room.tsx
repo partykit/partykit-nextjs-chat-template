@@ -2,25 +2,21 @@
 import { FormEventHandler, useState } from "react";
 import usePartySocket from "partysocket/react";
 import type { Message, ChatMessage } from "@/party/chatRoom";
-import { nanoid } from "nanoid";
 
-const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
-
-const sessionId = nanoid(8);
-
-export const Room: React.FC<{ id: string; initialMessages: Message[] }> = ({
-  id,
-  initialMessages,
-}) => {
+export const Room: React.FC<{
+  room: string;
+  host: string;
+  party: string;
+  initialMessages: Message[];
+}> = ({ room, host, party, initialMessages }) => {
   // render with initial data, update from websocket as messages arrive
   const [messages, setMessages] = useState(initialMessages);
 
   // connect to the party via websocket
   const socket = usePartySocket({
-    id: sessionId,
     host,
-    party: "chatroom",
-    room: id,
+    party,
+    room,
     onMessage(event: MessageEvent<string>) {
       const message = JSON.parse(event.data) as ChatMessage;
       // upon connection, the server will send all messages in the room
@@ -33,22 +29,6 @@ export const Room: React.FC<{ id: string; initialMessages: Message[] }> = ({
         setMessages((messages) => [...messages, message]);
       }
     },
-
-    // async onOpen(event) {
-    //   // identify user in the partykit room
-    //   const req = await fetch("/api/session");
-    //   const res = await req.json();
-    //   const csrf = await getCsrfToken();
-    //   if (res.session) {
-    //     (event.target as PartySocket).send(
-    //       JSON.stringify({
-    //         type: "identify",
-    //         session: res.session,
-    //         csrf: csrf,
-    //       })
-    //     );
-    //   }
-    // },
   });
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
@@ -67,16 +47,7 @@ export const Room: React.FC<{ id: string; initialMessages: Message[] }> = ({
           {messages.map((message) => (
             <li key={message.id}>
               {new Date(message.at).toLocaleTimeString()}{" "}
-              <span
-                className={
-                  message.from.id === sessionId
-                    ? "font-bold text-blue-600 dark:text-yellow-300"
-                    : ""
-                }
-              >
-                {message.from.id}
-              </span>
-              : {message.text}
+              <span>{message.from.id.split("-")[0]}</span>: {message.text}
             </li>
           ))}
         </ul>
