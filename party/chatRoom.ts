@@ -5,9 +5,11 @@ import type {
 } from "partykit/server";
 import { SINGLETON_ROOM_ID } from "./chatRooms";
 import { nanoid } from "nanoid";
+import { Token, authenticateUserSession, getUserSession } from "./utils/auth";
 
 type User = {
-  id: string; // websocket.id
+  id: string;
+  image?: string;
 };
 
 export type Message = {
@@ -33,10 +35,19 @@ type NewMessage = {
   text: string;
 };
 
+type IdentifyMessage = {
+  type: "identify";
+} & Token;
+
 type ChatRoom = PartyKitRoom & {
   messages?: Message[];
 };
 
+type ChatConnecttion = PartyKitConnection & {
+  username?: string;
+};
+
+export type UserMessage = NewMessage | IdentifyMessage;
 export type ChatMessage = BroadcastMessage | SyncMessage;
 
 const updateRoomList = async (
@@ -69,36 +80,80 @@ export default {
     return new Response("Not found", { status: 404 });
   },
 
-  onConnect(websocket, room: ChatRoom) {
+  onConnect(connection: ChatConnecttion, room: ChatRoom) {
     // Send the whole list of messages to the new user
-    websocket.send(
+    connection.send(
       JSON.stringify(<SyncMessage>{
         type: "sync",
         messages: room.messages || [],
       })
     );
 
-    websocket.addEventListener("message", (evt) => {
-      const { text } = JSON.parse(evt.data as string) as NewMessage;
-      const message = <Message>{
-        id: nanoid(),
-        from: { id: websocket.id },
-        text: text,
-        at: Date.now(),
-      };
+    connection.addEventListener("message", async (evt) => {
+      const event = JSON.parse(evt.data as string) as UserMessage;
+      console.log("incoming", event);
+      if (event.type === "new") {
+        if (!connection.username) {
+          return connection.send(
+            JSON.stringify(<BroadcastMessage>{
+              type: "update",
+              id: nanoid(),
+              from: { id: "system" },
+              text: `You must sign in to send messages to this room`,
+              at: Date.now(),
+            })
+          );
+        }
 
-      if (!room.messages) {
-        room.messages = [];
+        const user = await getUserSession(room, connection.username);
+        if (!user) {
+          return connection.send(
+            JSON.stringify(<BroadcastMessage>{
+              type: "update",
+              id: nanoid(),
+              from: { id: "system" },
+              text: `Your session has expired, please sign in again`,
+              at: Date.now(),
+            })
+          );
+        }
+
+        const message = <Message>{
+          id: nanoid(),
+          from: { id: user.username, image: user.image },
+          text: event.text,
+          at: Date.now(),
+        };
+
+        if (!room.messages) {
+          room.messages = [];
+        }
+
+        room.messages.push(message);
+
+        // Broadcast the message to everyone including the sender
+        const broadcast = <BroadcastMessage>{ type: "update", ...message };
+        room.broadcast(JSON.stringify(broadcast), []);
       }
 
-      room.messages.push(message);
-
-      // Broadcast the message to everyone including the sender
-      const broadcast = <BroadcastMessage>{ type: "update", ...message };
-      room.broadcast(JSON.stringify(broadcast), []);
+      if (event.type === "identify") {
+        const user = await authenticateUserSession(room, event);
+        if (user) {
+          connection.username = user.username;
+          connection.send(
+            JSON.stringify(<BroadcastMessage>{
+              type: "update",
+              id: nanoid(),
+              from: { id: "system" },
+              text: `Welcome ${user.name ?? user.username}!`,
+              at: Date.now(),
+            })
+          );
+        }
+      }
     });
 
     // keep track of connections in a separate room list
-    updateRoomList(websocket, room);
+    updateRoomList(connection, room);
   },
 } satisfies PartyKitServer;

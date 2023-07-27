@@ -27,13 +27,6 @@ export default {
     const event = JSON.parse(message as string) as MessageEvent;
 
     if (event.type === "identify") {
-      if (typeof room.env.NEXT_APP_URL !== "string") {
-        return reply({
-          type: "error",
-          text: "Configuration error: Authentication URL not set",
-        });
-      }
-
       const user = await authenticateUserSession(room, event);
       if (user) {
         connection.username = user.username;

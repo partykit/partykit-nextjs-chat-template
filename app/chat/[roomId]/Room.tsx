@@ -1,7 +1,10 @@
 "use client";
-import { FormEventHandler, useState } from "react";
+import { FormEventHandler, useEffect, useState } from "react";
 import usePartySocket from "partysocket/react";
 import type { Message, ChatMessage } from "@/party/chatRoom";
+import { getCsrfToken, useSession } from "next-auth/react";
+import PartySocket from "partysocket";
+import Link from "next/link";
 
 export const Room: React.FC<{
   room: string;
@@ -24,6 +27,32 @@ export const Room: React.FC<{
     },
   });
 
+  // authenticate connection to the partykit room
+  const session = useSession();
+  const sessionStatus = session?.status;
+  useEffect(() => {
+    if (sessionStatus === "authenticated" && socket) {
+      const identify = async () => {
+        // identify user in the partykit room
+        const req = await fetch("/api/session");
+        const res = await req.json();
+        const csrfToken = await getCsrfToken();
+        if (res.sessionToken && res.session) {
+          socket.send(
+            JSON.stringify({
+              type: "identify",
+              username: res.session.username,
+              sessionToken: res.sessionToken,
+              csrfToken: csrfToken,
+            })
+          );
+        }
+      };
+
+      identify();
+    }
+  }, [sessionStatus, socket]);
+
   const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault();
     const text = event.currentTarget.message.value;
@@ -45,14 +74,27 @@ export const Room: React.FC<{
           ))}
         </ul>
       </div>
-      <form onSubmit={handleSubmit} className="sticky bottom-0">
-        <input
-          placeholder="Send message..."
-          className="px-1 bg-slate-200"
-          type="text"
-          name="message"
-        ></input>
-      </form>
+      {sessionStatus === "authenticated" ? (
+        <form onSubmit={handleSubmit} className="sticky bottom-0">
+          <input
+            placeholder="Send message..."
+            className="px-1 bg-slate-200"
+            type="text"
+            name="message"
+          ></input>
+          <div>
+            <Link className="underline text-sm" href="/api/auth/signout">
+              Sign out
+            </Link>
+          </div>
+        </form>
+      ) : sessionStatus === "unauthenticated" ? (
+        <Link className="underline" href="/api/auth/signin">
+          Sign in to start posting
+        </Link>
+      ) : (
+        <span />
+      )}
     </div>
   );
 };
