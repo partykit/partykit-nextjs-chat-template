@@ -11,27 +11,28 @@ export const authenticateSession = async (
   ].join("; ");
 
   try {
-    const res = await fetch(`${authServerUrl}/api/session`, {
+    const url = `${authServerUrl}/api/auth/session`;
+    const res = await fetch(url, {
       headers: {
         Accept: "application/json",
         Cookie: cookie,
       },
     });
 
+    console.log("url", url);
+    console.log("res", res.status);
+
     if (res.ok) {
       const session = await res.json();
+      console.log("ses", session);
       if (session.user) {
         return session.user;
       }
-    } else {
-      return {
-        username: await res.text(),
-      };
     }
+
+    throw new Error(await res.text());
   } catch (e) {
-    console.log("Error", e);
+    console.log("Failed to authenticate user", e);
     throw e;
   }
-
-  return null;
 };

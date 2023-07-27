@@ -38,6 +38,8 @@ export default {
         event.csrf
       );
 
+      console.log("user", user);
+
       if (user) {
         connection.user = user;
         connection.serializeAttachment({
