@@ -18,10 +18,12 @@ export type Token = {
  */
 export const getUserSession = async (room: PartyKitRoom, username: string) => {
   const session = room.parties.session.get(username);
-  const response = await session.fetch({ method: "GET" }).then((r) => r.json());
+  const response = (await session
+    .fetch({ method: "GET" })
+    .then((r) => r.json())) as { user?: User | null };
 
   // TODO: Validate response
-  return response as User | null;
+  return response?.user ?? null;
 };
 
 /**
