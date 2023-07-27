@@ -7,6 +7,10 @@ type MessageEvent =
   | { type: "error"; text: string };
 
 export default {
+  onRequest(req) {
+    console.log("request to main room", req);
+    return new Response("OK", { status: 200 });
+  },
   async onMessage(message, socket, room) {
     const reply = (response: MessageEvent) =>
       socket.send(JSON.stringify(response));

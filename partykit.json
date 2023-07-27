@@ -1,5 +1,8 @@
 {
-    "main": "party/main.ts",
-    "name": "partykit-nextjs-chat-template"
+  "main": "party/main.ts",
+  "name": "partykit-nextjs-chat-template",
+  "parties": {
+    "chatroom": "party/chatRoom.ts",
+    "chatrooms": "party/chatRooms.ts"
   }
-  
+}
