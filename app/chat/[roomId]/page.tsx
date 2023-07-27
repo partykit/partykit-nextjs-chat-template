@@ -23,7 +23,7 @@ export default async function ChatRoomPage({
         host={host}
         party={party}
         room={params.roomId}
-        initialMessages={room.messages ?? []}
+        messages={room.messages ?? []}
       />
     </div>
   );

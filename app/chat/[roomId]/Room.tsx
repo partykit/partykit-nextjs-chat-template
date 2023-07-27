@@ -7,12 +7,10 @@ export const Room: React.FC<{
   room: string;
   host: string;
   party: string;
-  initialMessages: Message[];
-}> = ({ room, host, party, initialMessages }) => {
+  messages: Message[];
+}> = ({ room, host, party, messages: initialMessages }) => {
   // render with initial data, update from websocket as messages arrive
   const [messages, setMessages] = useState(initialMessages);
-
-  // connect to the party via websocket
   const socket = usePartySocket({
     host,
     party,
@@ -20,14 +18,9 @@ export const Room: React.FC<{
     onMessage(event: MessageEvent<string>) {
       const message = JSON.parse(event.data) as ChatMessage;
       // upon connection, the server will send all messages in the room
-      if (message.type === "sync") {
-        setMessages(message.messages);
-      }
-
+      if (message.type === "sync") setMessages(message.messages);
       // after that, the server will send updates as they arrive
-      if (message.type === "update") {
-        setMessages((messages) => [...messages, message]);
-      }
+      if (message.type === "update") setMessages((prev) => [...prev, message]);
     },
   });
 
