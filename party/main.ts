@@ -1,4 +1,4 @@
-import { PartyKitServer } from "partykit/server";
+import { PartyKitConnection, PartyKitServer } from "partykit/server";
 import { authenticateSession } from "./authenticateSession";
 
 type MessageEvent =
@@ -6,19 +6,24 @@ type MessageEvent =
   | { type: "message"; text: string }
   | { type: "error"; text: string };
 
-export default {
-  async onMessage(message, socket, room) {
-    const reply = (response: MessageEvent) =>
-      socket.send(JSON.stringify(response));
+type Connection = PartyKitConnection & {
+  user?: {
+    username: string;
+  };
+};
 
-    const connection: typeof socket & {
-      user?: {
-        username: string;
-      };
-    } = socket;
+export default {
+  onConnect(connection: Connection) {
+    connection.user = (connection.deserializeAttachment() ?? {}).user;
+  },
+
+  async onMessage(message, connection: Connection, room) {
+    const reply = (response: MessageEvent) =>
+      connection.send(JSON.stringify(response));
 
     const event = JSON.parse(message as string) as MessageEvent;
 
+    console.log("event", event.type, message);
     if (event.type === "identify") {
       if (typeof room.env.NEXT_APP_URL !== "string") {
         return reply({
@@ -32,14 +37,17 @@ export default {
         event.session,
         event.csrf
       );
+
       if (user) {
         connection.user = user;
         connection.serializeAttachment({
-          ...connection.deserializeAttachment(),
+          ...(connection.deserializeAttachment() ?? {}),
           user,
         });
 
         reply({ type: "message", text: `Welcome ${user.username}` });
+      } else {
+        reply({ type: "error", text: "No user found" });
       }
     }
 
