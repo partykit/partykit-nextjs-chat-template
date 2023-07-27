@@ -1,4 +1,8 @@
 import { Room } from "./Room";
+import { Message } from "@/party/chatRoom";
+import PartySocket from "partysocket";
+
+export const runtime = "edge";
 
 const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
 const protocol = host?.startsWith("localhost") ? "http" : "https";
@@ -9,12 +13,18 @@ export default async function ChatRoomPage({
 }: {
   params: { roomId: string };
 }) {
-  // fetch initial data on the server
-  const url = `${protocol}://${host}/parties/${party}/${params.roomId}`;
-  const res = await fetch(url, { next: { revalidate: 0 } });
-  const room = await res.json();
-
-  console.log("Server rendering with messages", room.messages);
+  const socket = new PartySocket({ host, party, room: params.roomId });
+  const messages = (await Promise.race([
+    new Promise((resolve) => {
+      socket.addEventListener("message", (e) => {
+        const message = JSON.parse(e.data);
+        if (message.type === "sync") resolve(message.messages);
+      });
+    }),
+    new Promise((resolve) => {
+      setTimeout(() => resolve([]), 2000);
+    }),
+  ]).finally(() => socket.close())) as Message[];
 
   return (
     <div className="p-4 h-screen w-screen">
@@ -23,7 +33,7 @@ export default async function ChatRoomPage({
         host={host}
         party={party}
         room={params.roomId}
-        initialMessages={room.messages ?? []}
+        messages={messages ?? []}
       />
     </div>
   );
