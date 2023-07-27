@@ -18,7 +18,6 @@ export type Message = {
 };
 
 // Outbound message types
-
 type BroadcastMessage = {
   type: "update";
 } & Message;
@@ -29,13 +28,11 @@ type SyncMessage = {
 };
 
 // Inbound message types
-
 type NewMessage = {
   type: "new";
   text: string;
 };
 
-// Make a combined type of PartyKitRoom and the message store
 type ChatRoom = PartyKitRoom & {
   messages?: Message[];
 };
@@ -60,27 +57,26 @@ const updateRoomList = async (
 // server.ts
 export default {
   onRequest(request, room: ChatRoom) {
-    try {
-      if (request.method === "GET") {
-        const payload: SyncMessage = {
+    if (request.method === "GET") {
+      return new Response(
+        JSON.stringify(<SyncMessage>{
           type: "sync",
           messages: room.messages || [],
-        };
-
-        return new Response(JSON.stringify(payload));
-      }
-
-      return new Response("Not found", { status: 404 });
-    } catch (e) {
-      return new Response(JSON.stringify({ error: e.message }), {
-        status: 500,
-      });
+        })
+      );
     }
+
+    return new Response("Not found", { status: 404 });
   },
 
   onConnect(websocket, room: ChatRoom) {
-    // keep track of connections in a separate room list
-    updateRoomList(websocket, room);
+    // Send the whole list of messages to the new user
+    websocket.send(
+      JSON.stringify(<SyncMessage>{
+        type: "sync",
+        messages: room.messages || [],
+      })
+    );
 
     websocket.addEventListener("message", (evt) => {
       const { text } = JSON.parse(evt.data as string) as NewMessage;
@@ -97,21 +93,12 @@ export default {
 
       room.messages.push(message);
 
-      const broadcast = <BroadcastMessage>{
-        type: "update",
-        ...message,
-      };
-
-      // Broadcast the message to everyone including the
+      // Broadcast the message to everyone including the sender
+      const broadcast = <BroadcastMessage>{ type: "update", ...message };
       room.broadcast(JSON.stringify(broadcast), []);
     });
 
-    // Send the whole list of messages to the new user
-    const sync = <SyncMessage>{
-      type: "sync",
-      messages: room.messages || [],
-    };
-
-    websocket.send(JSON.stringify(sync));
+    // keep track of connections in a separate room list
+    updateRoomList(websocket, room);
   },
 } satisfies PartyKitServer;
