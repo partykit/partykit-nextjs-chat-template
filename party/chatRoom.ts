@@ -50,6 +50,13 @@ type ChatConnection = PartyKitConnection & {
 export type UserMessage = NewMessage | IdentifyMessage;
 export type ChatMessage = BroadcastMessage | SyncMessage;
 
+const ensureLoadMessages = async (room: Omit<ChatRoom, "id">) => {
+  if (!room.messages) {
+    room.messages = (await room.storage.get<Message[]>("messages")) ?? [];
+  }
+  return room.messages;
+};
+
 const updateRoomList = async (
   websocket: PartyKitConnection,
   room: ChatRoom
@@ -76,14 +83,20 @@ const update = (msg: Omit<Message, "id" | "at">) =>
 const sync = (messages: Message[]) =>
   JSON.stringify(<SyncMessage>{ type: "sync", messages });
 
+const DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD = 1000 * 60 * 60 * 24; // 24 hours
+
 // server.ts
 export default {
-  onRequest(request, room: ChatRoom) {
+  async onRequest(request, room: ChatRoom) {
+    if (!room.messages) {
+      room.messages = (await room.storage.get<Message[]>("messages")) ?? [];
+    }
+
     if (request.method === "GET") {
       return new Response(
         JSON.stringify(<SyncMessage>{
           type: "sync",
-          messages: room.messages || [],
+          messages: room.messages,
         })
       );
     }
@@ -92,15 +105,13 @@ export default {
   },
 
   async onConnect(connection: ChatConnection, room: ChatRoom) {
-    if (!room.messages) {
-      room.messages = (await room.storage.get<Message[]>("messages")) ?? [];
-    }
-
-    // Send the whole list of messages to the new user
-    connection.send(sync(room.messages ?? []));
+    await ensureLoadMessages(room);
 
     // keep track of connections in a separate room list
     updateRoomList(connection, room);
+
+    // Send the whole list of messages to the new user
+    connection.send(sync(room.messages ?? []));
 
     connection.addEventListener("message", async (evt) => {
       const event = JSON.parse(evt.data as string) as UserMessage;
@@ -128,6 +139,15 @@ export default {
           );
         }
 
+        if (event.text.length > 1000) {
+          return connection.send(
+            update({
+              from: { id: "system" },
+              text: `Message too long`,
+            })
+          );
+        }
+
         const message = <Message>{
           id: nanoid(),
           from: { id: user.username, image: user.image },
@@ -141,8 +161,20 @@ export default {
         room.broadcast(update(message), []);
 
         // persist the messages to storage
-        room.storage.put("messages", room.messages);
+        await room.storage.put("messages", room.messages);
+
+        // automatically clear the room storage after period of inactivity
+        await room.storage.deleteAlarm();
+        await room.storage.setAlarm(
+          new Date().getTime() + DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD
+        );
       }
     });
+  },
+
+  async onAlarm(room: Omit<ChatRoom, "id">) {
+    console.log("Automatically deleting old messages after inactivity...");
+    await room.storage.delete("messages");
+    room.messages = [];
   },
 } satisfies PartyKitServer;
