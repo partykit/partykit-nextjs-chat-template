@@ -5,16 +5,16 @@ import type {
 } from "partykit/server";
 import { SINGLETON_ROOM_ID } from "./chatRooms";
 import { nanoid } from "nanoid";
-import { Token, authenticateUserSession, getUserSession } from "./utils/auth";
+import { Token, User, authenticateUser, isSessionValid } from "./utils/auth";
 
-type User = {
+type Sender = {
   id: string;
   image?: string;
 };
 
 export type Message = {
   id: string; // set by server
-  from: User;
+  from: Sender;
   text: string;
   at: number; // Date
 };
@@ -43,8 +43,8 @@ type ChatRoom = PartyKitRoom & {
   messages?: Message[];
 };
 
-type ChatConnecttion = PartyKitConnection & {
-  username?: string;
+type ChatConnection = PartyKitConnection & {
+  user?: User | null;
 };
 
 export type UserMessage = NewMessage | IdentifyMessage;
@@ -65,6 +65,17 @@ const updateRoomList = async (
   websocket.addEventListener("close", updateList);
 };
 
+const update = (msg: Omit<Message, "id" | "at">) =>
+  JSON.stringify(<BroadcastMessage>{
+    type: "update",
+    id: nanoid(),
+    at: Date.now(),
+    ...msg,
+  });
+
+const sync = (messages: Message[]) =>
+  JSON.stringify(<SyncMessage>{ type: "sync", messages });
+
 // server.ts
 export default {
   onRequest(request, room: ChatRoom) {
@@ -80,40 +91,35 @@ export default {
     return new Response("Not found", { status: 404 });
   },
 
-  onConnect(connection: ChatConnecttion, room: ChatRoom) {
+  onConnect(connection: ChatConnection, room: ChatRoom) {
     // Send the whole list of messages to the new user
-    connection.send(
-      JSON.stringify(<SyncMessage>{
-        type: "sync",
-        messages: room.messages || [],
-      })
-    );
+    connection.send(sync(room.messages ?? []));
+
+    // keep track of connections in a separate room list
+    updateRoomList(connection, room);
 
     connection.addEventListener("message", async (evt) => {
       const event = JSON.parse(evt.data as string) as UserMessage;
-      console.log("incoming", event);
-      if (event.type === "new") {
-        if (!connection.username) {
+
+      if (event.type === "identify") {
+        connection.user = await authenticateUser(room, event);
+        if (connection.user) {
           return connection.send(
-            JSON.stringify(<BroadcastMessage>{
-              type: "update",
-              id: nanoid(),
+            update({
               from: { id: "system" },
-              text: `You must sign in to send messages to this room`,
-              at: Date.now(),
+              text: `Welcome ${connection.user.username}!`,
             })
           );
         }
+      }
 
-        const user = await getUserSession(room, connection.username);
-        if (!user) {
+      if (event.type === "new") {
+        const user = connection.user;
+        if (!isSessionValid(user)) {
           return connection.send(
-            JSON.stringify(<BroadcastMessage>{
-              type: "update",
-              id: nanoid(),
+            update({
               from: { id: "system" },
-              text: `Your session has expired, please sign in again`,
-              at: Date.now(),
+              text: `You must sign in to send messages to this room`,
             })
           );
         }
@@ -132,28 +138,8 @@ export default {
         room.messages.push(message);
 
         // Broadcast the message to everyone including the sender
-        const broadcast = <BroadcastMessage>{ type: "update", ...message };
-        room.broadcast(JSON.stringify(broadcast), []);
-      }
-
-      if (event.type === "identify") {
-        const user = await authenticateUserSession(room, event);
-        if (user) {
-          connection.username = user.username;
-          connection.send(
-            JSON.stringify(<BroadcastMessage>{
-              type: "update",
-              id: nanoid(),
-              from: { id: "system" },
-              text: `Welcome ${user.name ?? user.username}!`,
-              at: Date.now(),
-            })
-          );
-        }
+        room.broadcast(update(message), []);
       }
     });
-
-    // keep track of connections in a separate room list
-    updateRoomList(connection, room);
   },
 } satisfies PartyKitServer;

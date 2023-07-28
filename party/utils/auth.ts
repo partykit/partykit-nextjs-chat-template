@@ -5,6 +5,7 @@ export type User = {
   name?: string;
   email?: string;
   image?: string;
+  expires?: string;
 };
 
 export type Token = {
@@ -13,11 +14,9 @@ export type Token = {
   username: string;
 };
 
-/**
- * Get current session for `username` from the session party
- */
-export const getUserSession = async (room: PartyKitRoom, username: string) => {
-  const session = room.parties.session.get(username);
+/** Get current session for `username` from the user party */
+export const getUser = async (room: PartyKitRoom, username: string) => {
+  const session = room.parties.user.get(username);
   const response = (await session
     .fetch({ method: "GET" })
     .then((r) => r.json())) as { user?: User | null };
@@ -26,14 +25,9 @@ export const getUserSession = async (room: PartyKitRoom, username: string) => {
   return response?.user ?? null;
 };
 
-/**
- * Create a new session for user in the session party, if the token is valid
- */
-export const authenticateUserSession = async (
-  room: PartyKitRoom,
-  token: Token
-) => {
-  const session = room.parties.session.get(token.username);
+/** Create a new session in the `user` party if the token is valid */
+export const authenticateUser = async (room: PartyKitRoom, token: Token) => {
+  const session = room.parties.user.get(token.username);
   const request = await session.fetch({
     method: "POST",
     body: JSON.stringify(token),
@@ -48,10 +42,15 @@ export const authenticateUserSession = async (
   return null;
 };
 
-/**
- * Authorize token against the NextAuth session endpoint
- */
-export const authenticateUser = async (
+/** Check that the user exists, and isn't expired */
+export const isSessionValid = (session?: User | null): session is User => {
+  return Boolean(
+    session && (!session.expires || session.expires > new Date().toISOString())
+  );
+};
+
+/** Authorize token against the NextAuth session endpoint */
+export const getSession = async (
   authServerUrl: string,
   { csrfToken, sessionToken }: Token
 ) => {
@@ -74,13 +73,13 @@ export const authenticateUser = async (
     if (res.ok) {
       const session = await res.json();
       if (session.user) {
-        return session.user;
+        return { ...session.user, expires: session.expires };
       }
 
       return null;
+    } else {
+      throw new Error(await res.text());
     }
-
-    throw new Error(await res.text());
   } catch (e) {
     console.log("Failed to authenticate user", e);
     throw e;

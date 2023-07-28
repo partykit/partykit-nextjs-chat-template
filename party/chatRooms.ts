@@ -1,6 +1,5 @@
 import { PartyKitRoom, PartyKitServer } from "partykit/server";
 
-// CORS headers
 const headers = {
   "Access-Control-Allow-Origin": "*",
 };
@@ -12,12 +11,6 @@ export type RoomInfo = {
   connections: number;
 };
 
-async function updateRoomInfo(req: Request, room: PartyKitRoom) {
-  const body = (await req.json()) as RoomInfo;
-  await room.storage.put(body.id, body.connections);
-  return getActiveRooms(room);
-}
-
 async function getActiveRooms(room: PartyKitRoom) {
   const rooms = await room.storage.list<number>();
   const counts: RoomInfo[] = [];
@@ -28,8 +21,14 @@ async function getActiveRooms(room: PartyKitRoom) {
   return counts;
 }
 
+async function updateRoomInfo(req: Request, room: PartyKitRoom) {
+  const body = (await req.json()) as RoomInfo;
+  await room.storage.put(body.id, body.connections);
+  return getActiveRooms(room);
+}
+
 export default {
-  onConnect() {
+  onMessage() {
     // allow connections
   },
 
