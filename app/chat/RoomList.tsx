@@ -21,13 +21,29 @@ export const RoomList: React.FC<{ initialRooms: RoomInfo[] }> = ({
     },
   });
 
+  console.log(rooms);
+
   return (
-    <ul>
+    <ul className="flex flex-col space-y-2">
       {rooms.map((room) => (
-        <li key={room.id}>
-          <Link className="underline" href={`/chat/${room.id}`}>
-            # {room.id} ({room.connections} people)
+        <li key={room.id} className="flex space-x-2">
+          <Link className="text-xl hover:underline" href={`/chat/${room.id}`}>
+            # {room.id}
           </Link>
+          <span>
+            {room.users?.map((u) => (
+              <a key={u.username} title={u.username}>
+                {/*eslint-disable-next-line @next/next/no-img-element*/}
+                <img
+                  alt={u.username}
+                  src={u.image}
+                  className={`w-6 h-6 rounded-full mt-0.5 ${
+                    u.present ? "" : "opacity-30"
+                  }`}
+                />
+              </a>
+            ))}
+          </span>
         </li>
       ))}
     </ul>

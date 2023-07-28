@@ -58,18 +58,21 @@ const ensureLoadMessages = async (room: Omit<ChatRoom, "id">) => {
 };
 
 const updateRoomList = async (
-  websocket: PartyKitConnection,
+  action: "enter" | "leave",
+  websocket: ChatConnection,
   room: ChatRoom
 ) => {
   const roomList = room.parties.chatrooms.get(SINGLETON_ROOM_ID);
-  const updateList = () =>
-    roomList.fetch({
-      method: "POST",
-      body: JSON.stringify({ id: room.id, connections: room.connections.size }),
-    });
-
-  updateList();
-  websocket.addEventListener("close", updateList);
+  const user = websocket.user;
+  roomList.fetch({
+    method: "POST",
+    body: JSON.stringify({
+      id: room.id,
+      connections: room.connections.size,
+      action,
+      user,
+    }),
+  });
 };
 
 const update = (msg: Omit<Message, "id" | "at">) =>
@@ -108,7 +111,10 @@ export default {
     await ensureLoadMessages(room);
 
     // keep track of connections in a separate room list
-    updateRoomList(connection, room);
+    updateRoomList("enter", connection, room);
+    connection.addEventListener("close", () =>
+      updateRoomList("leave", connection, room)
+    );
 
     // Send the whole list of messages to the new user
     connection.send(sync(room.messages ?? []));
@@ -119,6 +125,7 @@ export default {
       if (event.type === "identify") {
         connection.user = await authenticateUser(room, event);
         if (connection.user) {
+          updateRoomList("enter", connection, room);
           return connection.send(
             update({
               from: { id: "system" },
