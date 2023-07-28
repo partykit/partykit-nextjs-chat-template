@@ -4,6 +4,8 @@ const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
 const protocol = host?.startsWith("localhost") ? "http" : "https";
 const party = "chatroom";
 
+export const revalidate = 0;
+
 export default async function ChatRoomPage({
   params,
 }: {
