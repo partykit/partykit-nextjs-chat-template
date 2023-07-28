@@ -18,7 +18,7 @@ export default async function ChatRoomPage({
 
   return (
     <div className="p-4 h-screen w-screen">
-      <h1 className="text-4xl font-medium pb-2 h-20">{params.roomId}</h1>
+      <h1 className="text-4xl font-medium pb-2">{params.roomId}</h1>
       <Room
         host={host}
         party={party}

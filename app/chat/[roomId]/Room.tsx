@@ -72,8 +72,8 @@ export const Room: React.FC<{
   };
 
   return (
-    <div className="">
-      <div className="">
+    <div>
+      <div>
         <ul className="font-mono">
           {messages.map((message) =>
             message.from.id === "system" ? (
@@ -98,13 +98,19 @@ export const Room: React.FC<{
             name="message"
           ></input>
           <div>
-            <Link className="underline text-sm" href="/api/auth/signout">
+            <Link
+              className="underline text-sm"
+              href={`/api/auth/signout?callbackUrl=${window.location.href}`}
+            >
               Sign out
             </Link>
           </div>
         </form>
       ) : session.status === "unauthenticated" ? (
-        <Link className="underline" href="/api/auth/signin">
+        <Link
+          className="underline"
+          href={`/api/auth/signin?callbackUrl=${window.location.href}`}
+        >
           Sign in to start posting
         </Link>
       ) : (
