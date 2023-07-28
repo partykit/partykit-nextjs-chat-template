@@ -33,7 +33,7 @@ export const RoomList: React.FC<{ initialRooms: RoomInfo[] }> = ({
         >
           <span className="flex space-x-2">
             <span>{room.id}</span>
-            <span>
+            <span className="flex space-x-1">
               {room.users?.map((u) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
