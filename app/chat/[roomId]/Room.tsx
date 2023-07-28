@@ -75,19 +75,25 @@ export const Room: React.FC<{
     <div className="">
       <div className="">
         <ul className="font-mono">
-          {messages.map((message) => (
-            <li key={message.id}>
-              {new Date(message.at).toLocaleTimeString()}{" "}
-              <span>{message.from.id.split("-")[0]}</span>: {message.text}
-            </li>
-          ))}
+          {messages.map((message) =>
+            message.from.id === "system" ? (
+              <li key={message.id} className="text-gray-400">
+                {new Date(message.at).toLocaleTimeString()} {message.text}
+              </li>
+            ) : (
+              <li key={message.id}>
+                {new Date(message.at).toLocaleTimeString()}{" "}
+                <span>{message.from.id}</span>: {message.text}
+              </li>
+            )
+          )}
         </ul>
       </div>
       {session.status === "authenticated" ? (
-        <form onSubmit={handleSubmit} className="sticky bottom-0">
+        <form onSubmit={handleSubmit} className="sticky bottom-0 pt-2">
           <input
             placeholder="Send message..."
-            className="px-1 bg-slate-200"
+            className="px-1 bg-gray-200 min-w-full rounded"
             type="text"
             name="message"
           ></input>
