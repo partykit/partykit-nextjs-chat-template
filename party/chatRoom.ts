@@ -91,7 +91,11 @@ export default {
     return new Response("Not found", { status: 404 });
   },
 
-  onConnect(connection: ChatConnection, room: ChatRoom) {
+  async onConnect(connection: ChatConnection, room: ChatRoom) {
+    if (!room.messages) {
+      room.messages = (await room.storage.get<Message[]>("messages")) ?? [];
+    }
+
     // Send the whole list of messages to the new user
     connection.send(sync(room.messages ?? []));
 
@@ -131,14 +135,13 @@ export default {
           at: Date.now(),
         };
 
-        if (!room.messages) {
-          room.messages = [];
-        }
-
-        room.messages.push(message);
+        room.messages!.push(message);
 
         // Broadcast the message to everyone including the sender
         room.broadcast(update(message), []);
+
+        // persist the messages to storage
+        room.storage.put("messages", room.messages);
       }
     });
   },
