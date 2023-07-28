@@ -6,6 +6,24 @@ import { getCsrfToken, useSession } from "next-auth/react";
 import PartySocket from "partysocket";
 import Link from "next/link";
 
+const identify = async (socket: PartySocket) => {
+  // identify user in the partykit room
+  const req = await fetch("/api/session");
+  const res = await req.json();
+  const csrfToken = await getCsrfToken();
+  if (res.sessionToken && res.session) {
+    // note: this could be done as HTTP POST /parties/user/:username
+    socket.send(
+      JSON.stringify({
+        type: "identify",
+        username: res.session.username,
+        sessionToken: res.sessionToken,
+        csrfToken: csrfToken,
+      })
+    );
+  }
+};
+
 export const Room: React.FC<{
   room: string;
   host: string;
@@ -13,11 +31,18 @@ export const Room: React.FC<{
   messages: Message[];
 }> = ({ room, host, party, messages: initialMessages }) => {
   // render with initial data, update from websocket as messages arrive
+  const session = useSession();
   const [messages, setMessages] = useState(initialMessages);
   const socket = usePartySocket({
     host,
     party,
     room,
+    onOpen(e) {
+      // identify user upon connection
+      if (session.status === "authenticated" && e.target) {
+        identify(e.target as PartySocket);
+      }
+    },
     onMessage(event: MessageEvent<string>) {
       const message = JSON.parse(event.data) as ChatMessage;
       // upon connection, the server will send all messages in the room
@@ -27,31 +52,15 @@ export const Room: React.FC<{
     },
   });
 
-  // authenticate connection to the partykit room
-  const session = useSession();
-  const sessionStatus = session?.status;
+  // authenticate connection to the partykit room if session status changes
   useEffect(() => {
-    if (sessionStatus === "authenticated" && socket) {
-      const identify = async () => {
-        // identify user in the partykit room
-        const req = await fetch("/api/session");
-        const res = await req.json();
-        const csrfToken = await getCsrfToken();
-        if (res.sessionToken && res.session) {
-          socket.send(
-            JSON.stringify({
-              type: "identify",
-              username: res.session.username,
-              sessionToken: res.sessionToken,
-              csrfToken: csrfToken,
-            })
-          );
-        }
-      };
-
-      identify();
+    if (
+      session.status === "authenticated" &&
+      socket?.readyState === socket.OPEN
+    ) {
+      identify(socket);
     }
-  }, [sessionStatus, socket]);
+  }, [session.status, socket]);
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault();
@@ -74,7 +83,7 @@ export const Room: React.FC<{
           ))}
         </ul>
       </div>
-      {sessionStatus === "authenticated" ? (
+      {session.status === "authenticated" ? (
         <form onSubmit={handleSubmit} className="sticky bottom-0">
           <input
             placeholder="Send message..."
@@ -88,7 +97,7 @@ export const Room: React.FC<{
             </Link>
           </div>
         </form>
-      ) : sessionStatus === "unauthenticated" ? (
+      ) : session.status === "unauthenticated" ? (
         <Link className="underline" href="/api/auth/signin">
           Sign in to start posting
         </Link>
