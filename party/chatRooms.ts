@@ -78,6 +78,10 @@ async function updateRoomInfo(req: Request, room: PartyKitRoom) {
 }
 
 export default {
+  async onConnect(connection, room) {
+    const roomList = await getActiveRooms(room);
+    connection.send(JSON.stringify(roomList));
+  },
   onMessage() {
     // allow connections
   },

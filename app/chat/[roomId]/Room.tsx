@@ -97,7 +97,7 @@ export const Room: React.FC<{
             type="text"
             name="message"
           ></input>
-          <div>
+          <div className="pt-2">
             <Link
               className="underline text-sm"
               href={`/api/auth/signout?callbackUrl=${window.location.href}`}

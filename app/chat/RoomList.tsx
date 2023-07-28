@@ -21,8 +21,6 @@ export const RoomList: React.FC<{ initialRooms: RoomInfo[] }> = ({
     },
   });
 
-  console.log(rooms);
-
   return (
     <ul className="flex flex-col space-y-2">
       {rooms.map((room) => (
@@ -50,7 +48,7 @@ export const RoomList: React.FC<{ initialRooms: RoomInfo[] }> = ({
           <span>
             <span className="bg-black rounded-full px-4 py-1 text-white">
               {room.connections}
-              <span className="hidden sm:inline"> connections</span>
+              <span className="hidden sm:inline"> viewers</span>
             </span>
           </span>
         </Link>
