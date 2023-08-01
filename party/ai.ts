@@ -44,6 +44,10 @@ export default {
     if (req.method === "POST") {
       const { id, action } = await req.json();
       if (action === "connect") {
+        if (!room.env.OPENAI_API_KEY) {
+          return new Response("OPENAI_API_KEY not set", { status: 500 });
+        }
+
         // open a websocket connection to the chatroom
         const chatRoom = room.parties.chatroom.get(id);
 
