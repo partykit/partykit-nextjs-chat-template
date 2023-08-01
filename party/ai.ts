@@ -1,15 +1,41 @@
-import { PartyKitServer, PartyKitConnection } from "partykit/server";
+import {
+  PartyKitServer,
+  PartyKitConnection,
+  PartyKitRoom,
+} from "partykit/server";
+import { nanoid } from "nanoid";
 import type { Message, ChatMessage, UserMessage } from "./chatRoom";
+import { getChatCompletionResponse, AIMessage } from "./utils/openai";
 
 export const AI_USERNAME = "AI";
 
+const getPrompt = (messages: Message[]): AIMessage[] => {
+  // format chat history in a way that OpenAI can understand
+  return [
+    {
+      role: "system",
+      content:
+        "You are a participant in an internet chatroom. You're trying to fit in and impress everyone else with cool facts that you know. When presented with a chat history, you'll respond with a cool fact that's related to the topic being discussed in the last 10 user messages. Keep your responses short.",
+    },
+    ...messages.slice(-5).map((message) => ({
+      role:
+        message.from.id === AI_USERNAME
+          ? ("assistant" as const)
+          : ("user" as const),
+      content: message.text,
+    })),
+  ];
+};
+
 // act as a user in the room
-const participate = (socket: PartyKitConnection["socket"]) => {
+const join = (socket: PartyKitConnection["socket"], room: PartyKitRoom) => {
   let messages: Message[] = [];
   let identified = false;
+  let typing = false;
 
   // listen to messages from the chatroom
   socket.addEventListener("message", (message) => {
+    // before first message, let the room know who we are
     if (!identified) {
       identified = true;
       socket.send(
@@ -22,17 +48,34 @@ const participate = (socket: PartyKitConnection["socket"]) => {
       messages = data.messages;
     }
 
-    if (data.type === "update") {
+    if (data.type === "edit") {
+      messages = messages.map((m) => (m.id === data.id ? data : m));
+    }
+
+    // when new messages arrive, respond to them with a message from the AI
+    if (data.type === "new") {
       messages.push(data);
       if (data.from.id !== AI_USERNAME && data.from.id !== "system") {
-        setTimeout(() => {
-          socket.send(
-            JSON.stringify(<UserMessage>{
-              type: "new",
-              text: `${data.text.toUpperCase()}!!!!!`,
-            })
-          );
-        }, 500);
+        let text = "";
+        const prompt = getPrompt(messages);
+        const id = nanoid(); // give message an id so we can edit it
+        getChatCompletionResponse(
+          room.env,
+          prompt,
+          () => {
+            // post an empty message to start with
+            socket.send(JSON.stringify(<UserMessage>{ type: "new", id, text }));
+          },
+          (token) => {
+            // edit the message as tokens arrive
+            text += token;
+            socket.send(
+              JSON.stringify(<UserMessage>{ type: "edit", id, text })
+            );
+          }
+        ).finally(() => {
+          typing = false;
+        });
       }
     }
   });
@@ -50,12 +93,10 @@ export default {
 
         // open a websocket connection to the chatroom
         const chatRoom = room.parties.chatroom.get(id);
-
-        // TODO: Handle reconnections via PartySocket
         const socket = chatRoom.connect();
 
         // this is where the logic happens
-        participate(socket);
+        join(socket, room);
 
         return new Response("OK");
       }

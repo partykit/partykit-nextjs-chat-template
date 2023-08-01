@@ -21,7 +21,7 @@ export type Message = {
 
 // Outbound message types
 type BroadcastMessage = {
-  type: "update";
+  type: "new" | "edit";
 } & Message;
 
 type SyncMessage = {
@@ -33,6 +33,13 @@ type SyncMessage = {
 type NewMessage = {
   type: "new";
   text: string;
+  id?: string; // optional, server will set if not provided
+};
+
+type EditMessage = {
+  type: "edit";
+  text: string;
+  id: string;
 };
 
 type IdentifyMessage = {
@@ -48,7 +55,7 @@ type ChatConnection = PartyKitConnection & {
   user?: User | null;
 };
 
-export type UserMessage = NewMessage | IdentifyMessage;
+export type UserMessage = NewMessage | EditMessage | IdentifyMessage;
 export type ChatMessage = BroadcastMessage | SyncMessage;
 
 const ensureLoadMessages = async (room: Omit<ChatRoom, "id">) => {
@@ -86,10 +93,17 @@ const updateRoomList = async (
   });
 };
 
-const update = (msg: Omit<Message, "id" | "at">) =>
+const newMessage = (msg: Omit<Message, "id" | "at">) =>
   JSON.stringify(<BroadcastMessage>{
-    type: "update",
+    type: "new",
     id: nanoid(),
+    at: Date.now(),
+    ...msg,
+  });
+
+const editMessage = (msg: Omit<Message, "at">) =>
+  JSON.stringify(<BroadcastMessage>{
+    type: "edit",
     at: Date.now(),
     ...msg,
   });
@@ -139,7 +153,7 @@ export default {
         if (connection.user) {
           updateRoomList("enter", connection, room);
           return connection.send(
-            update({
+            newMessage({
               from: { id: "system" },
               text: `Welcome ${connection.user.username}!`,
             })
@@ -147,11 +161,11 @@ export default {
         }
       }
 
-      if (event.type === "new") {
+      if (event.type === "new" || event.type === "edit") {
         const user = connection.user;
         if (!isSessionValid(user)) {
           return connection.send(
-            update({
+            newMessage({
               from: { id: "system" },
               text: `You must sign in to send messages to this room`,
             })
@@ -160,7 +174,7 @@ export default {
 
         if (event.text.length > 1000) {
           return connection.send(
-            update({
+            newMessage({
               from: { id: "system" },
               text: `Message too long`,
             })
@@ -168,17 +182,26 @@ export default {
         }
 
         const message = <Message>{
-          id: nanoid(),
+          id: event.id ?? nanoid(),
           from: { id: user.username, image: user.image },
           text: event.text,
           at: Date.now(),
         };
 
-        room.messages!.push(message);
+        // send new message to all connections
+        if (event.type === "new") {
+          room.broadcast(newMessage(message), []);
+          room.messages!.push(message);
+        }
 
-        // Broadcast the message to everyone including the sender
-        room.broadcast(update(message), []);
-
+        // send edited message to all connections
+        if (event.type === "edit") {
+          console.log("editing message", event.id);
+          room.broadcast(editMessage(message), []);
+          room.messages = room.messages!.map((m) =>
+            m.id == event.id ? message : m
+          );
+        }
         // persist the messages to storage
         await room.storage.put("messages", room.messages);
 

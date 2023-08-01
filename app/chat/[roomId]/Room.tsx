@@ -48,7 +48,12 @@ export const Room: React.FC<{
       // upon connection, the server will send all messages in the room
       if (message.type === "sync") setMessages(message.messages);
       // after that, the server will send updates as they arrive
-      if (message.type === "update") setMessages((prev) => [...prev, message]);
+      if (message.type === "new") setMessages((prev) => [...prev, message]);
+      if (message.type === "edit") {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === message.id ? message : m))
+        );
+      }
     },
   });
 
