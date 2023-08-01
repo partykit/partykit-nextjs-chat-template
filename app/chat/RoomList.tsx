@@ -2,7 +2,7 @@
 import { useState } from "react";
 import usePartySocket from "partysocket/react";
 import { RoomInfo, SINGLETON_ROOM_ID } from "@/party/chatRooms";
-import Link from "next/link";
+import RoomCard from "./RoomCard";
 
 const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
 
@@ -22,36 +22,9 @@ export const RoomList: React.FC<{ initialRooms: RoomInfo[] }> = ({
   });
 
   return (
-    <ul className="flex flex-col space-y-2">
+    <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {rooms.map((room) => (
-        <Link
-          key={room.id}
-          className="flex justify-between border-2 border-black px-3 py-2 rounded hover:bg-gray-100"
-          href={`/chat/${room.id}`}
-        >
-          <span className="flex space-x-2">
-            <span>{room.id}</span>
-            <span className="flex space-x-1">
-              {room.users?.map((u) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={u.username}
-                  alt={u.username}
-                  src={u.image}
-                  className={`w-6 h-6 rounded-full ${
-                    u.present ? "" : "opacity-30"
-                  }`}
-                />
-              ))}
-            </span>
-          </span>
-          <span>
-            <span className="bg-black rounded-full px-4 py-1 text-white">
-              {room.connections}
-              <span className="hidden sm:inline"> viewers</span>
-            </span>
-          </span>
-        </Link>
+        <RoomCard key={room.id} room={room} />
       ))}
     </ul>
   );
