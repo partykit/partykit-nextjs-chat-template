@@ -5,6 +5,7 @@
     "chatroom": "party/chatRoom.ts",
     "chatrooms": "party/chatRooms.ts",
     "user": "party/user.ts",
-    "ai": "party/ai.ts"
+    "ai": "party/ai.ts",
+    "cursors": "party/cursors.ts"
   }
 }
