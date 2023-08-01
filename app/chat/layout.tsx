@@ -10,7 +10,9 @@ export default function ChatLayout({
     <div className="flex flex-col justify-between min-h-screen relative">
         <Header />
         <main className="p-6 flex-grow">
-            {children}
+            <div className="max-w-7xl m-auto">
+                {children}
+            </div>
         </main>
         <Footer />
     </div>
