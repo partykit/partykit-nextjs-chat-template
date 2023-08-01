@@ -31,8 +31,6 @@ export const authenticateUser = async (
   room: PartyKitRoom,
   token: Token
 ): Promise<User | null> => {
-  // TODO: This could be more elegant
-  // TODO: Add image
   if (token.username === AI_USERNAME) {
     return {
       username: AI_USERNAME,
