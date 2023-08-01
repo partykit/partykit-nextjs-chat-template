@@ -196,7 +196,6 @@ export default {
 
         // send edited message to all connections
         if (event.type === "edit") {
-          console.log("editing message", event.id);
           room.broadcast(editMessage(message), []);
           room.messages = room.messages!.map((m) =>
             m.id == event.id ? message : m

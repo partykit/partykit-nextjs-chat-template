@@ -15,9 +15,9 @@ const getPrompt = (messages: Message[]): AIMessage[] => {
     {
       role: "system",
       content:
-        "You are a participant in an internet chatroom. You're trying to fit in and impress everyone else with cool facts that you know. When presented with a chat history, you'll respond with a cool fact that's related to the topic being discussed in the last 10 user messages. Keep your responses short.",
+        "You are a participant in an internet chatroom. You're trying to fit in and impress everyone else with cool facts that you know, emulating the tone and writing style of the room. When presented with a chat history, you'll respond with a cool fact that's related to the topic being discussed. Keep your responses short.",
     },
-    ...messages.slice(-5).map((message) => ({
+    ...messages.slice(-10).map((message) => ({
       role:
         message.from.id === AI_USERNAME
           ? ("assistant" as const)
