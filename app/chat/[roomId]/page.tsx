@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Room } from "./Room";
 
 const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
@@ -19,8 +20,9 @@ export default async function ChatRoomPage({
   console.log("Server rendering with messages", room.messages);
 
   return (
-    <div>
-      <h1 className="text-4xl font-medium pb-2">{params.roomId}</h1>
+    <div className="flex flex-col gap-4 justify-between items-start">
+      <Link href="/chat" className="text-stone-400">&lt;- All Rooms</Link>
+      <h1 className="text-4xl font-bold">{params.roomId}</h1>
       <Room
         host={host}
         party={party}
