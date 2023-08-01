@@ -13,7 +13,7 @@ const participate = (socket: PartyKitConnection["socket"]) => {
     if (!identified) {
       identified = true;
       socket.send(
-        JSON.stringify(<UserMessage>{ type: "identify", username: "AI" })
+        JSON.stringify(<UserMessage>{ type: "identify", username: AI_USERNAME })
       );
     }
 
@@ -24,7 +24,7 @@ const participate = (socket: PartyKitConnection["socket"]) => {
 
     if (data.type === "update") {
       messages.push(data);
-      if (data.from.id !== "AI" && data.from.id !== "system") {
+      if (data.from.id !== AI_USERNAME && data.from.id !== "system") {
         setTimeout(() => {
           socket.send(
             JSON.stringify(<UserMessage>{
