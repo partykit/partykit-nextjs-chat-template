@@ -29,12 +29,14 @@ const identify = async (socket: PartySocket) => {
 export const Room: React.FC<{
   room: string;
   host: string;
+  user: UserSession | null;
   party: string;
   messages: Message[];
-}> = ({ room, host, party, messages: initialMessages }) => {
+}> = ({ room, host, user: initialUser, party, messages: initialMessages }) => {
   // render with initial data, update from websocket as messages arrive
   const session = useSession();
   const [messages, setMessages] = useState(initialMessages);
+  const [user, setUser] = useState(initialUser);
   const socket = usePartySocket({
     host,
     party,
@@ -43,6 +45,7 @@ export const Room: React.FC<{
       // identify user upon connection
       if (session.status === "authenticated" && e.target) {
         identify(e.target as PartySocket);
+        if (session?.data?.user) setUser(session.data.user as UserSession)
       }
     },
     onMessage(event: MessageEvent<string>) {
@@ -53,7 +56,6 @@ export const Room: React.FC<{
       if (message.type === "update") setMessages((prev) => [...prev, message]);
     },
   });
-  const user = session.data?.user as UserSession | null;
 
   // authenticate connection to the partykit room if session status changes
   useEffect(() => {
@@ -71,6 +73,8 @@ export const Room: React.FC<{
     if (text?.trim()) {
       socket.send(JSON.stringify({ type: "new", text }));
       event.currentTarget.message.value = "";
+      // Scroll page to bottom
+      window.scrollTo({ top: document.body.scrollHeight, left: 0, behavior: "smooth" });
     }
   };
 

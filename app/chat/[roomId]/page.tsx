@@ -1,3 +1,5 @@
+import { getServerSession } from 'next-auth'
+import { authOptions, UserSession } from "@/app/api/auth/[...nextauth]/route"
 import Link from "next/link";
 import { Room } from "./Room";
 
@@ -16,6 +18,8 @@ export default async function ChatRoomPage({
   const url = `${protocol}://${host}/parties/${party}/${params.roomId}`;
   const res = await fetch(url, { next: { revalidate: 0 } });
   const room = await res.json();
+  const session = await getServerSession(authOptions);
+  const user = session?.user as UserSession | null;
 
   console.log("Server rendering with messages", room.messages);
 
@@ -26,6 +30,7 @@ export default async function ChatRoomPage({
       <Room
         host={host}
         party={party}
+        user={user}
         room={params.roomId}
         messages={room.messages ?? []}
       />
