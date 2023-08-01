@@ -22,7 +22,7 @@ export default async function ChatRoomPage({
   return (
     <div className="flex flex-col gap-4 justify-between items-start">
       <Link href="/chat" className="text-stone-400">&lt;- All Rooms</Link>
-      <h1 className="text-4xl font-bold">{params.roomId}</h1>
+      <h1 className="text-4xl font-medium pb-6">{params.roomId}</h1>
       <Room
         host={host}
         party={party}

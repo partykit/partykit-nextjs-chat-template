@@ -7,7 +7,7 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col justify-between min-h-screen relative">
+    <div className="flex flex-col justify-between relative" style={{minHeight: "100dvh"}}>
         <Header />
         <main className="p-6 flex-grow">
             <div className="max-w-7xl m-auto">

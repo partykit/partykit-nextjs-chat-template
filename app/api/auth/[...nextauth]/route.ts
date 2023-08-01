@@ -1,4 +1,5 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
+import type { User } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
@@ -11,6 +12,8 @@ if (!GITHUB_CLIENT_ID) {
 if (!GITHUB_SECRET) {
   throw new Error("GITHUB_CLIENT_SECRET not defined in environment");
 }
+
+export type UserSession = User & { username: string };
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -37,7 +40,7 @@ export const authOptions: NextAuthOptions = {
         user: {
           ...session.user,
           username: token.username,
-        },
+        } as UserSession,
       };
     },
 

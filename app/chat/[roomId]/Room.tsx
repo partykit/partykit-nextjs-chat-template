@@ -1,6 +1,7 @@
 "use client";
 import { FormEventHandler, useEffect, useState } from "react";
 import usePartySocket from "partysocket/react";
+import { type UserSession } from "@/app/api/auth/[...nextauth]/route";
 import type { Message, ChatMessage } from "@/party/chatRoom";
 import { getCsrfToken, useSession } from "next-auth/react";
 import PartySocket from "partysocket";
@@ -52,6 +53,7 @@ export const Room: React.FC<{
       if (message.type === "update") setMessages((prev) => [...prev, message]);
     },
   });
+  const user = session.data?.user as UserSession | null;
 
   // authenticate connection to the partykit room if session status changes
   useEffect(() => {
@@ -74,22 +76,26 @@ export const Room: React.FC<{
 
   return (
     <div className="h-full w-full flex flex-col gap-6">
-      <ul className="flex flex-col gap-4">
-        {messages.map((message) =>
-          <RoomMessage key={message.id} message={message} isMe={message.from.id === session.data?.user?.username} />
-        )}
-      </ul>
+      { messages.length > 0 ? (
+        <ul className="flex flex-col gap-3">
+          {messages.map((message) =>
+            <RoomMessage key={message.id} message={message} isMe={message.from.id === user?.username} />
+          )}
+        </ul>
+      ) : (
+        <p className="italic">No messages yet</p>
+      ) }
       {session.status === "authenticated" ? (
-        <form onSubmit={handleSubmit} className="sticky bottom-4 pt-2">
+        <form onSubmit={handleSubmit} className="sticky bottom-6">
           <input
             placeholder="Send message..."
-            className="outline outline-1 outline-stone-400 p-3 bg-stone-100 min-w-full rounded"
+            className="border border-stone-400 p-3 bg-stone-100 min-w-full rounded"
             type="text"
             name="message"
           ></input>
         </form>
       ) : session.status === "unauthenticated" ? (
-        <div className="sticky left-4 bottom-4 pt-2 rounded-sm flex items-start">
+        <div className="sticky left-6 bottom-6 pt-2 rounded-sm flex items-start">
           <p className="bg-red-100 p-3">
             You must be signed in to post messages.
             {" "}
