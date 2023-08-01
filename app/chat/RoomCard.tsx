@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { RoomInfo } from "@/party/chatRooms";
+import Avatar from "@/app/components/Avatar";
 
 export default function RoomCard(props: { room: RoomInfo }) {
     const { room } = props;
@@ -22,15 +23,7 @@ export default function RoomCard(props: { room: RoomInfo }) {
                     <div className="p-6">
                         <span className="flex space-x-2">
                                 {room.users?.map((u) => (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                    key={u.username}
-                                    alt={u.username}
-                                    src={u.image}
-                                    className={`w-8 h-8 rounded-full ${
-                                        u.present ? "" : "opacity-30"
-                                    }`}
-                                    />
+                                    <Avatar key={u.username} user={u} variant={u.present ? "normal" : "ghost"} />
                                 ))}
                             </span>
                     </div>

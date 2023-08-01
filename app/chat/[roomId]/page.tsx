@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth'
-import { authOptions, UserSession } from "@/app/api/auth/[...nextauth]/route"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import type { User } from "@/party/utils/auth";
 import Link from "next/link";
 import { Room } from "./Room";
 
@@ -19,7 +20,7 @@ export default async function ChatRoomPage({
   const res = await fetch(url, { next: { revalidate: 0 } });
   const room = await res.json();
   const session = await getServerSession(authOptions);
-  const user = session?.user as UserSession | null;
+  const user = session?.user as User | null;
 
   console.log("Server rendering with messages", room.messages);
 

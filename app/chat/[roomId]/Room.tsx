@@ -1,7 +1,7 @@
 "use client";
 import { FormEventHandler, useEffect, useState } from "react";
 import usePartySocket from "partysocket/react";
-import { type UserSession } from "@/app/api/auth/[...nextauth]/route";
+import type { User } from "@/party/utils/auth";
 import type { Message, ChatMessage } from "@/party/chatRoom";
 import { getCsrfToken, useSession } from "next-auth/react";
 import PartySocket from "partysocket";
@@ -29,7 +29,7 @@ const identify = async (socket: PartySocket) => {
 export const Room: React.FC<{
   room: string;
   host: string;
-  user: UserSession | null;
+  user: User | null;
   party: string;
   messages: Message[];
 }> = ({ room, host, user: initialUser, party, messages: initialMessages }) => {
@@ -45,7 +45,7 @@ export const Room: React.FC<{
       // identify user upon connection
       if (session.status === "authenticated" && e.target) {
         identify(e.target as PartySocket);
-        if (session?.data?.user) setUser(session.data.user as UserSession)
+        if (session?.data?.user) setUser(session.data.user as User)
       }
     },
     onMessage(event: MessageEvent<string>) {
