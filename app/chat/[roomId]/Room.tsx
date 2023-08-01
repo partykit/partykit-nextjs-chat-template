@@ -80,9 +80,16 @@ export const Room: React.FC<{
   return (
     <div className="h-full w-full flex flex-col gap-6">
       <ul className="flex flex-col gap-4">
-        {messages.map((message) =>
-          <RoomMessage key={message.id} message={message} isMe={message.from.id === session.data?.user?.username} />
-        )}
+        {messages.map((message) => (
+          <RoomMessage
+            key={message.id}
+            message={message}
+            isMe={
+              //@ts-expect-error
+              message.from.id === session.data?.user?.username
+            }
+          />
+        ))}
       </ul>
       {session.status === "authenticated" ? (
         <form onSubmit={handleSubmit} className="sticky bottom-4 pt-2">
@@ -96,8 +103,7 @@ export const Room: React.FC<{
       ) : session.status === "unauthenticated" ? (
         <div className="sticky left-4 bottom-4 pt-2 rounded-sm flex items-start">
           <p className="bg-red-100 p-3">
-            You must be signed in to post messages.
-            {" "}
+            You must be signed in to post messages.{" "}
             <Link
               className="underline"
               href={`/api/auth/signin?callbackUrl=${window.location.href}`}
