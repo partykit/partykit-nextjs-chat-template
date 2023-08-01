@@ -12,7 +12,7 @@ export default async function RoomListPagePage() {
   const rooms = ((await res.json()) ?? []) as RoomInfo[];
 
   return (
-    <div className="p-4">
+    <div>
       <h1 className="text-4xl font-medium pb-2">Rooms</h1>
       <RoomList initialRooms={rooms} />
     </div>
