@@ -12,7 +12,7 @@ if (!GITHUB_SECRET) {
   throw new Error("GITHUB_CLIENT_SECRET not defined in environment");
 }
 
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
       clientId: GITHUB_CLIENT_ID,

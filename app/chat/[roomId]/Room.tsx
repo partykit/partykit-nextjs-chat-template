@@ -92,22 +92,20 @@ export const Room: React.FC<{
             type="text"
             name="message"
           ></input>
-          <div className="pt-2">
-            <Link
-              className="underline text-sm"
-              href={`/api/auth/signout?callbackUrl=${window.location.href}`}
-            >
-              Sign out
-            </Link>
-          </div>
         </form>
       ) : session.status === "unauthenticated" ? (
-        <Link
-          className="underline"
-          href={`/api/auth/signin?callbackUrl=${window.location.href}`}
-        >
-          Sign in to start posting
-        </Link>
+        <div className="sticky left-4 bottom-4 pt-2 rounded-sm flex items-start">
+          <p className="bg-red-100 p-3">
+            You must be signed in to post messages.
+            {" "}
+            <Link
+              className="underline"
+              href={`/api/auth/signin?callbackUrl=${window.location.href}`}
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
       ) : (
         <span />
       )}
