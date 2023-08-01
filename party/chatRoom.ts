@@ -41,6 +41,7 @@ type IdentifyMessage = {
 
 type ChatRoom = PartyKitRoom & {
   messages?: Message[];
+  ai?: boolean;
 };
 
 type ChatConnection = PartyKitConnection & {
@@ -55,6 +56,16 @@ const ensureLoadMessages = async (room: Omit<ChatRoom, "id">) => {
     room.messages = (await room.storage.get<Message[]>("messages")) ?? [];
   }
   return room.messages;
+};
+
+const ensureAIParticipant = async (room: ChatRoom) => {
+  if (!room.ai) {
+    room.ai = true;
+    room.parties.ai.get(room.id).fetch({
+      method: "POST",
+      body: JSON.stringify({ action: "connect", id: room.id }),
+    });
+  }
 };
 
 const updateRoomList = async (
@@ -109,6 +120,7 @@ export default {
 
   async onConnect(connection: ChatConnection, room: ChatRoom) {
     await ensureLoadMessages(room);
+    await ensureAIParticipant(room);
 
     // keep track of connections in a separate room list
     updateRoomList("enter", connection, room);

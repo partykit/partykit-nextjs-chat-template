@@ -4,6 +4,7 @@
   "parties": {
     "chatroom": "party/chatRoom.ts",
     "chatrooms": "party/chatRooms.ts",
-    "user": "party/user.ts"
+    "user": "party/user.ts",
+    "ai": "party/ai.ts"
   }
 }
