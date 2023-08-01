@@ -3,7 +3,7 @@ import Link from 'next/link';
 export default function Footer() {
     return (
       <footer className="p-6 w-full">
-        <div className="max-w-7xl m-auto text-sm text-stone-400 flex flex-col gap-2">
+        <div className="pt-4 max-w-7xl m-auto text-sm text-stone-400 flex flex-col gap-2">
             <h2>
                 PartyKit Next.js Chat Template
             </h2>

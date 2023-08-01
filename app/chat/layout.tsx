@@ -1,5 +1,5 @@
-import Header from "@/app/components/header"
-import Footer from "@/app/components/footer"
+import Header from "@/app/components/Header"
+import Footer from "@/app/components/Footer"
 
 export default function ChatLayout({
   children,
@@ -7,7 +7,7 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col justify-between min-h-screen">
+    <div className="flex flex-col justify-between min-h-screen relative">
         <Header />
         <main className="p-6 flex-grow">
             {children}

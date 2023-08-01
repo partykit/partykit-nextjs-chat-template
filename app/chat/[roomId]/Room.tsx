@@ -5,6 +5,7 @@ import type { Message, ChatMessage } from "@/party/chatRoom";
 import { getCsrfToken, useSession } from "next-auth/react";
 import PartySocket from "partysocket";
 import Link from "next/link";
+import RoomMessage from "./RoomMessage";
 
 const identify = async (socket: PartySocket) => {
   // identify user in the partykit room
@@ -72,28 +73,17 @@ export const Room: React.FC<{
   };
 
   return (
-    <div>
-      <div>
-        <ul className="font-mono">
-          {messages.map((message) =>
-            message.from.id === "system" ? (
-              <li key={message.id} className="text-gray-400">
-                {new Date(message.at).toLocaleTimeString()} {message.text}
-              </li>
-            ) : (
-              <li key={message.id}>
-                {new Date(message.at).toLocaleTimeString()}{" "}
-                <span>{message.from.id}</span>: {message.text}
-              </li>
-            )
-          )}
-        </ul>
-      </div>
+    <div className="h-full w-full flex flex-col gap-6">
+      <ul className="flex flex-col gap-4">
+        {messages.map((message) =>
+          <RoomMessage key={message.id} message={message} isMe={message.from.id === session.data?.user?.username} />
+        )}
+      </ul>
       {session.status === "authenticated" ? (
-        <form onSubmit={handleSubmit} className="sticky bottom-0 pt-2">
+        <form onSubmit={handleSubmit} className="sticky bottom-4 pt-2">
           <input
             placeholder="Send message..."
-            className="px-1 bg-gray-200 min-w-full rounded"
+            className="outline outline-1 outline-stone-400 p-3 bg-stone-100 min-w-full rounded"
             type="text"
             name="message"
           ></input>
