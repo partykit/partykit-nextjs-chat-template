@@ -13,7 +13,7 @@ export default async function RoomListPagePage() {
 
   return (
     <div>
-      <h1 className="text-4xl font-medium pb-2">Rooms</h1>
+      <h1 className="text-4xl font-medium pb-6">Rooms</h1>
       <RoomList initialRooms={rooms} />
     </div>
   );
