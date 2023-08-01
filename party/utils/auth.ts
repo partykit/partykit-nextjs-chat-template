@@ -1,4 +1,5 @@
 import { PartyKitRoom } from "partykit/server";
+import { AI_USERNAME } from "../ai";
 
 export type User = {
   username: string;
@@ -26,7 +27,19 @@ export const getUser = async (room: PartyKitRoom, username: string) => {
 };
 
 /** Create a new session in the `user` party if the token is valid */
-export const authenticateUser = async (room: PartyKitRoom, token: Token) => {
+export const authenticateUser = async (
+  room: PartyKitRoom,
+  token: Token
+): Promise<User | null> => {
+  if (token.username === AI_USERNAME) {
+    return {
+      username: AI_USERNAME,
+      image:
+        "https://pbs.twimg.com/profile_images/1634058036934500352/b4F1eVpJ_400x400.jpg",
+      expires: new Date(2099, 0, 1).toISOString(),
+    };
+  }
+
   const session = room.parties.user.get(token.username);
   const request = await session.fetch({
     method: "POST",
