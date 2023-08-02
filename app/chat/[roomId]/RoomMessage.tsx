@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Message } from "@/party/chatRoom";
+import Avatar from "@/app/components/Avatar";
 
 export default function RoomMessage(props: {
   message: Message;
@@ -24,16 +25,17 @@ export default function RoomMessage(props: {
   } else {
     return (
       <li
-        className={`flex flex-col justify-center gap-1 ${
-          isMe ? "items-end" : "items-start"
-        }`}
+        className={`flex justify-start gap-2 ${isMe ? "flex-row-reverse" : ""}`}
       >
-        <span className="bg-stone-100 px-2 py-1 rounded-sm">
-          {message.text}
-        </span>
-        <span className="text-xs text-stone-400">
-          {formattedDate ?? <>&nbsp;</>}
-        </span>
+        <Avatar username={message.from.id} image={message.from.image ?? null} />
+        <div className={`flex flex-col gap-1 ${isMe ? "items-end" : ""}`}>
+          <span className="bg-stone-100 px-2 py-1 rounded-xl">
+            {message.text}
+          </span>
+          <span className="text-xs text-stone-400">
+            {formattedDate ?? <>&nbsp;</>}
+          </span>
+        </div>
       </li>
     );
   }

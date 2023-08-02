@@ -17,7 +17,7 @@ export default async function Header() {
         </Link>
         {user && (
           <div className="flex gap-2 items-center">
-            <Avatar user={user} />
+            <Avatar username={user.username} image={user.image ?? null} />
             <span>Hi {user.username}!</span>
             <Signout />
           </div>

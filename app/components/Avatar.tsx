@@ -1,16 +1,17 @@
 import Image from "next/image";
-import type { User } from "@/party/utils/auth";
 
 export default function Avatar(props: {
-  user: User;
+  username: string;
+  image: string | null;
   variant?: "normal" | "ghost";
 }) {
-  const { user } = props;
+  const { username, image } = props;
   const variant = props.variant ?? "normal";
+
   return (
     <Image
-      src={user.image!}
-      alt={user.username}
+      src={image ?? ""}
+      alt={username}
       width="128"
       height="128"
       className={`w-8 h-8 rounded-full bg-stone-200 ${
