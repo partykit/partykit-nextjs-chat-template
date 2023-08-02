@@ -4,6 +4,8 @@ import { useState, useEffect, useContext, createContext } from "react";
 import usePartySocket from "partysocket/react";
 import type { PartialCursor, CursorsMap } from "@/party/cursors";
 
+const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
+
 type CursorsContextType = {
     others: CursorsMap;
     myCursor: PartialCursor | null;
@@ -25,10 +27,9 @@ export default function CursorsProvider(props : { children: React.ReactNode }) {
     const [others, setOthers] = useState<CursorsMap>({})
 
     const socket = usePartySocket({
-            host: "localhost:1999", // for local development
-            //host: "voronoi-party.genmon.partykit.dev", // for production
-            party: "cursors",
-            room: "shared-cursors",
+        host,
+        party: "cursors",
+        room: "shared-cursors",
     })
 
     useEffect(() => {
