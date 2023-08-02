@@ -8,10 +8,8 @@ export default function HomepageLayout({
 }) {
   return (
     <CursorsProvider>
-        <main className="p-6 relative">
-            <Cursors />
-            {children}
-        </main>
+      <Cursors />
+      {children}
     </CursorsProvider>
   );
 }

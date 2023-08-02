@@ -9,9 +9,10 @@ type CursorsContextType = {
     myCursor: PartialCursor | null;
     myId: string | null;
     windowDimensions: { width: number, height: number };
+    getCount: () => number;
 }
 
-export const CursorsContext = createContext<CursorsContextType>({ others: {}, myCursor: null, myId: null, windowDimensions: { width: 0, height: 0 } })
+export const CursorsContext = createContext<CursorsContextType>({ others: {}, myCursor: null, myId: null, windowDimensions: { width: 0, height: 0 }, getCount: () => 0 })
 
 export function useCursors() {
     return useContext(CursorsContext)
@@ -95,7 +96,7 @@ export default function CursorsProvider(props : { children: React.ReactNode }) {
             if(!socket) return
             if(!dimensions.width || !dimensions.height) return
             e.preventDefault()
-            const cursor = { x: e.touches[0].clientX / dimensions.width, y: e.touches[0].clientY / dimensions.height, pointer: "touch" } as Position
+            const cursor = { x: e.touches[0].clientX / dimensions.width, y: e.touches[0].clientY / dimensions.height, pointer: "touch" } as PartialCursor
             socket.send(JSON.stringify(cursor))
             setMyCursor(cursor)
         }
@@ -116,8 +117,13 @@ export default function CursorsProvider(props : { children: React.ReactNode }) {
         }
     }, [socket, dimensions])
 
+    const getCount = () => {
+        const othersCount = Object.keys(others).length
+        return othersCount + (myCursor ? 1 : 0)
+    }
+
     return (
-        <CursorsContext.Provider value={{ others: others, myCursor: myCursor, myId: myId, windowDimensions: dimensions }}>
+        <CursorsContext.Provider value={{ others: others, myCursor: myCursor, myId: myId, windowDimensions: dimensions, getCount: getCount }}>
             {props.children}
         </CursorsContext.Provider>
     )

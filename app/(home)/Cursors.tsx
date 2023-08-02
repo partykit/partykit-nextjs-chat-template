@@ -9,7 +9,7 @@ export default function Cursors() {
     return (
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden" style={{minHeight: "100dvh"}}>
             { Object.keys(others).map((id) => <div key={`cursor-${id}`}><OtherCursor id={id} /></div>) }
-            {/* <MyCursor /> */}
+            <MyCursor />
         </div>
     )
 }
