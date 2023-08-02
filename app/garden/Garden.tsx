@@ -1,22 +1,33 @@
 "use client";
 
 import { useState } from "react";
+import { syncedStore, getYjsDoc } from "@syncedstore/core";
+import YPartyKitProvider from "y-partykit/provider";
+
+const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
+
+const yDocShape = { garden: [] as string[] };
 
 // The initial garden is 25 empty squares
-const initialGarden = [...Array(25)].map(() => "");
+const initialGarden = [...Array(64)].map(() => "");
 
-const allowedEmojis = ["🌱", "🌿", "🌵", "🌳", "🌴", "🌲", "🌾", "🌺", "🌻", "🌼"];
+const emojiTrees = ["🌳", "🌲", "🌳", "🌲", "🌳", "🌲", "🌳", "🌲"];
+const emojiShrubs = ["🌱", "🌱", "🌱", "🌱", "🌱", "🌱", "🌱", "🌱", "🌱", "🌱", "🌱", "🌱", "🌱", "🌱", "🌱", "🌱", ];
+const emojiForestAnimals = ["🐿️", "🦌"];
+const allowedEmojis = [...emojiTrees, ...emojiShrubs, ...emojiForestAnimals];
+
+const store = syncedStore(yDocShape);
+const doc = getYjsDoc(store);
 
 export default function Garden() {
     const [emojiToPlace, setEmojiToPlace] = useState<string | null>(null);
     const [garden, setGarden] = useState<string[]>(initialGarden);
 
-    // Random pastel color generator
-    const randomColor = () => {
-        const hue = Math.floor(Math.random() * 360);
-        const pastel = 'hsl(' + hue + ', 100%, 87.5%)';
-        return pastel;
-    }
+    /*const provider = new YPartyKitProvider(
+        host,
+        "shared-garden",
+        doc,
+        {party: "garden"});*/
 
     const handlePlantEmoji = (i: number) => {
         if (emojiToPlace) {
@@ -34,11 +45,11 @@ export default function Garden() {
 
     return (
         <div className="flex flex-col gap-6 justify-start items-start">
-            <div className="grid grid-cols-5 grid-rows-5">
-                { [...Array(25)].map((_, i) => (
+            <div className="grid grid-cols-8 grid-rows-8">
+                { [...Array(64)].map((_, i) => (
                     <button
                         key={i}
-                        className="bg-lime-100 w-10 h-10 flex justify-center items-center disabled:bg-stone-100 hover:bg-lime-200 disabled:cursor-not-allowed"
+                        className="bg-lime-100 w-10 h-10 flex justify-center items-center disabled:bg-stone-100 hover:bg-lime-200 disabled:cursor-not-allowed text-4xl overflow-clip"
                         disabled={emojiToPlace === null || garden[i] !== ""}
                         onClick={() => handlePlantEmoji(i)}
                         >
@@ -51,7 +62,7 @@ export default function Garden() {
                 { emojiToPlace && (
                     <>
                     <div className="bg-cyan-100 rounded text-4xl px-6 py-4">{emojiToPlace} Plant me!</div>
-                    <p className="text-sm text-stone-400">Click on a square to plant your emoji. <button className="underline" onClick={() => setEmojiToPlace(null)}>Cancel</button></p>
+                    <p className="text-sm text-stone-400">Click on a square to plant your emoji. <button className="underline" onClick={() => handleEmojiToPlant()}>Re-spin</button></p>
                     </>
                 )}
                 { !emojiToPlace && (
