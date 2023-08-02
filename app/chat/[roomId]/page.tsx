@@ -5,7 +5,11 @@ import Link from "next/link";
 import { Room } from "./Room";
 
 const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
-const protocol = host?.startsWith("localhost") ? "http" : "https";
+const protocol =
+  host?.startsWith("localhost") || host?.startsWith("127.0.0.1")
+    ? "http"
+    : "https";
+
 const party = "chatroom";
 
 export const revalidate = 0;
