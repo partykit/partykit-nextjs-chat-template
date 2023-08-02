@@ -27,7 +27,9 @@ export default function RoomMessage(props: {
       <li
         className={`flex justify-start gap-2 ${isMe ? "flex-row-reverse" : ""}`}
       >
-        <Avatar username={message.from.id} image={message.from.image ?? null} />
+        <div className="grow-0">
+          <Avatar username={message.from.id} image={message.from.image ?? null} />
+        </div>
         <div className={`flex flex-col gap-1 ${isMe ? "items-end" : ""}`}>
           <span className="bg-stone-100 px-2 py-1 rounded-xl">
             {message.text}

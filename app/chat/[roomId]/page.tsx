@@ -3,6 +3,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import type { User } from "@/party/utils/auth";
 import Link from "next/link";
 import { Room } from "./Room";
+import PresenceBar from "./PresenceBar";
 
 const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
 const protocol =
@@ -33,7 +34,10 @@ export default async function ChatRoomPage({
       <Link href="/chat" className="text-stone-400">
         &lt;- All Rooms
       </Link>
-      <h1 className="text-4xl font-medium pb-6">{params.roomId}</h1>
+      <div className="w-full flex flex-row justify-between items-start">
+        <h1 className="text-4xl font-medium pb-6">{params.roomId}</h1>
+        <PresenceBar roomId={params.roomId} />
+      </div>
       <Room
         host={host}
         party={party}
