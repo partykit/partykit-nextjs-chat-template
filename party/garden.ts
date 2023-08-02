@@ -52,5 +52,21 @@ export const getStarterEmojis = () => {
     }) as Cell[];
 }
 
-
-export default { onConnect };
+export default {
+    onConnect(ws, room) {
+        return onConnect(ws, room, {
+            callback: {
+                async handler(ydoc) {
+                    try {
+                        // @TODO Stash the ydoc and set an alarm if it isn't empty
+                    } catch (e) {
+                        console.error("Callback error", e);
+                    }
+                }
+            },
+        });
+    },
+    async onAlarm(room) {
+        // @TODO iterate the garden and set a new alarm if the garden isn't empty
+    }
+} satisfies PartyKitServer;
