@@ -7,9 +7,22 @@ const partyUrl = `${protocol}://${host}/parties/chatrooms/${SINGLETON_ROOM_ID}`;
 
 export const revalidate = 0;
 
-export default async function RoomListPagePage() {
-  const res = await fetch(partyUrl, { next: { revalidate: 0 } });
-  const rooms = ((await res.json()) ?? []) as RoomInfo[];
+export default async function RoomListPage() {
+  console.log("host", host);
+  console.log("protocol", protocol);
+  console.log("partyUrl", partyUrl);
+
+  let rooms = [] as RoomInfo[];
+  try {
+    const res = await fetch(partyUrl, { next: { revalidate: 0 } });
+    console.log("ok?", res.ok);
+    console.log("status", res.status);
+    if (res.ok) {
+      rooms = ((await res.json()) ?? []) as RoomInfo[];
+    }
+  } catch (e) {
+    console.error("Fetching rooms failed with error", e);
+  }
 
   return (
     <div>
