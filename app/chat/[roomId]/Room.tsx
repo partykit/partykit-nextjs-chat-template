@@ -45,7 +45,7 @@ export const Room: React.FC<{
       // identify user upon connection
       if (session.status === "authenticated" && e.target) {
         identify(e.target as PartySocket);
-        if (session?.data?.user) setUser(session.data.user as User)
+        if (session?.data?.user) setUser(session.data.user as User);
       }
     },
     onMessage(event: MessageEvent<string>) {
@@ -79,21 +79,29 @@ export const Room: React.FC<{
       socket.send(JSON.stringify({ type: "new", text }));
       event.currentTarget.message.value = "";
       // Scroll page to bottom
-      window.scrollTo({ top: document.body.scrollHeight, left: 0, behavior: "smooth" });
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        left: 0,
+        behavior: "smooth",
+      });
     }
   };
 
   return (
     <div className="h-full w-full flex flex-col gap-6">
-      { messages.length > 0 ? (
+      {messages.length > 0 ? (
         <ul className="flex flex-col gap-3">
-          {messages.map((message) =>
-            <RoomMessage key={message.id} message={message} isMe={message.from.id === user?.username} />
-          )}
+          {messages.map((message) => (
+            <RoomMessage
+              key={message.id}
+              message={message}
+              isMe={message.from.id === user?.username}
+            />
+          ))}
         </ul>
       ) : (
         <p className="italic">No messages yet</p>
-      ) }
+      )}
       {session.status === "authenticated" ? (
         <form onSubmit={handleSubmit} className="sticky bottom-6">
           <input
@@ -106,8 +114,7 @@ export const Room: React.FC<{
       ) : session.status === "unauthenticated" ? (
         <div className="sticky left-6 bottom-6 pt-2 rounded-sm flex items-start">
           <p className="bg-red-100 p-3">
-            You must be signed in to post messages.
-            {" "}
+            You must be signed in to post messages.{" "}
             <Link
               className="underline"
               href={`/api/auth/signin?callbackUrl=${window.location.href}`}

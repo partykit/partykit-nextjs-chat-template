@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import type { User } from "@/party/utils/auth";
 import Link from "next/link";
 import { Room } from "./Room";
@@ -26,7 +26,9 @@ export default async function ChatRoomPage({
 
   return (
     <div className="flex flex-col gap-4 justify-between items-start">
-      <Link href="/chat" className="text-stone-400">&lt;- All Rooms</Link>
+      <Link href="/chat" className="text-stone-400">
+        &lt;- All Rooms
+      </Link>
       <h1 className="text-4xl font-medium pb-6">{params.roomId}</h1>
       <Room
         host={host}
