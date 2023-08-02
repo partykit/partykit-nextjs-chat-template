@@ -29,7 +29,7 @@ export default async function ChatRoomPage({
   console.log("Server rendering with messages", room.messages);
 
   return (
-    <div className="flex flex-col gap-4 justify-between items-start">
+    <div className="w-full flex flex-col gap-4 justify-between items-start">
       <Link href="/chat" className="text-stone-400">
         &lt;- All Rooms
       </Link>

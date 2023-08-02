@@ -25,7 +25,8 @@ export default function RoomCard(props: { room: RoomInfo }) {
               {room.users?.map((u) => (
                 <Avatar
                   key={u.username}
-                  user={u}
+                  username={u.username}
+                  image={u.image ?? null}
                   variant={u.present ? "normal" : "ghost"}
                 />
               ))}

@@ -15,7 +15,7 @@ export default async function RoomListPagePage() {
   const rooms = ((await res.json()) ?? []) as RoomInfo[];
 
   return (
-    <div>
+    <div className="w-full">
       <h1 className="text-4xl font-medium pb-6">Chat Rooms</h1>
       <RoomList initialRooms={rooms} />
     </div>
