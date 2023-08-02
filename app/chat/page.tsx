@@ -2,7 +2,10 @@ import { RoomInfo, SINGLETON_ROOM_ID } from "@/party/chatRooms";
 import { RoomList } from "./RoomList";
 
 const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST;
-const protocol = host?.startsWith("localhost") ? "http" : "https";
+const protocol =
+  host?.startsWith("localhost") || host?.startsWith("127.0.0.1")
+    ? "http"
+    : "https";
 const partyUrl = `${protocol}://${host}/parties/chatrooms/${SINGLETON_ROOM_ID}`;
 
 export const revalidate = 0;
