@@ -19,6 +19,9 @@ export default async function RoomListPage() {
     console.log("status", res.status);
     if (res.ok) {
       rooms = ((await res.json()) ?? []) as RoomInfo[];
+      console.log("rooms", rooms);
+    } else {
+      console.log("fail", await res.text());
     }
   } catch (e) {
     console.error("Fetching rooms failed with error", e);
