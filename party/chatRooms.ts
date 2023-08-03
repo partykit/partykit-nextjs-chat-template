@@ -14,6 +14,11 @@ export type RoomInfoUpdate = {
   user?: User;
 };
 
+export type RoomDeleteUpdate = {
+  id: string;
+  action: "delete";
+};
+
 export type RoomInfo = {
   id: string;
   connections: number;
@@ -42,8 +47,19 @@ async function getActiveRooms(room: PartyKitRoom): Promise<RoomInfo[]> {
 }
 
 async function updateRoomInfo(req: Request, room: PartyKitRoom) {
-  const update = (await req.json()) as RoomInfoUpdate;
-  const info = (await room.storage.get<RoomInfo>(update.id)) ?? {
+  const update = (await req.json()) as RoomInfoUpdate | RoomDeleteUpdate;
+
+  if (update.action === "delete") {
+    await room.storage.delete(update.id);
+    return getActiveRooms(room);
+  }
+
+  const persistedInfo = await room.storage.get<RoomInfo>(update.id);
+  if (!persistedInfo && update.action === "leave") {
+    return getActiveRooms(room);
+  }
+
+  const info = persistedInfo ?? {
     id: update.id,
     connections: 0,
     users: [],
@@ -52,8 +68,6 @@ async function updateRoomInfo(req: Request, room: PartyKitRoom) {
   info.connections = update.connections;
 
   const user = update.user;
-
-  console.log(update.action, user);
   if (user) {
     if (update.action === "enter") {
       // bump user to the top of the list on entry
@@ -68,7 +82,7 @@ async function updateRoomInfo(req: Request, room: PartyKitRoom) {
       info.users = info.users.map((u) =>
         u.username === user.username
           ? { ...u, present: false, leftAt: new Date().toISOString() }
-          : u,
+          : u
       );
     }
   }
@@ -100,6 +114,11 @@ export default {
       const roomList = await updateRoomInfo(req, room);
       room.broadcast(JSON.stringify(roomList));
       return new Response(JSON.stringify(roomList), { status: 200 });
+    }
+
+    if (req.method === "DELETE") {
+      await room.storage.deleteAll();
+      return new Response("Kaboom!", { status: 200 });
     }
 
     return new Response("Method not implemented", { status: 404 });

@@ -89,15 +89,23 @@ const updateRoomList = async (
   websocket: ChatConnection,
   room: ChatRoom
 ) => {
-  const roomList = room.parties.chatrooms.get(SINGLETON_ROOM_ID);
-  const user = websocket.user;
-  roomList.fetch({
+  return room.parties.chatrooms.get(SINGLETON_ROOM_ID).fetch({
     method: "POST",
     body: JSON.stringify({
       id: room.id,
       connections: room.connections.size,
+      user: websocket.user,
       action,
-      user,
+    }),
+  });
+};
+
+const removeRoomFromRoomList = async (room: ChatRoom) => {
+  return room.parties.chatrooms.get(SINGLETON_ROOM_ID).fetch({
+    method: "POST",
+    body: JSON.stringify({
+      id: room.id,
+      action: "delete",
     }),
   });
 };
@@ -134,13 +142,24 @@ export default {
       room.messages = (await room.storage.get<Message[]>("messages")) ?? [];
     }
 
+    if (request.method === "POST") {
+      await room.storage.put("id", room.id);
+      return new Response("OK", { status: 200, headers });
+    }
+
     if (request.method === "GET") {
-      return new Response(
-        JSON.stringify(<SyncMessage>{
-          type: "sync",
-          messages: room.messages,
-        })
-      );
+      // TODO: Remove this after migration complete
+      // await room.storage.put("id", room.id);
+      if (await room.storage.get("id")) {
+        return new Response(
+          JSON.stringify(<SyncMessage>{
+            type: "sync",
+            messages: room.messages,
+          })
+        );
+      }
+
+      return new Response("Not found", { status: 404 });
     }
 
     if (request.method === "DELETE") {
@@ -246,7 +265,10 @@ export default {
 
   async onAlarm(room: Omit<ChatRoom, "id">) {
     console.log("Automatically deleting old messages after inactivity...");
-    await room.storage.delete("messages");
-    room.messages = [];
+    const id = await room.storage.get<string>("id");
+    if (id) {
+      removeRoomMessages(room);
+      removeRoomFromRoomList({ ...room, id });
+    }
   },
 } satisfies PartyKitServer;
