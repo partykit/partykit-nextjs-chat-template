@@ -7,6 +7,11 @@ import { SINGLETON_ROOM_ID } from "./chatRooms";
 import { nanoid } from "nanoid";
 import { Token, User, authenticateUser, isSessionValid } from "./utils/auth";
 
+const headers = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
+};
+
 type Sender = {
   id: string;
   image?: string;
@@ -42,6 +47,10 @@ type EditMessage = {
   id: string;
 };
 
+type ClearRoomMessage = {
+  type: "clear";
+};
+
 type IdentifyMessage = {
   type: "identify";
 } & Token;
@@ -56,7 +65,7 @@ type ChatConnection = PartyKitConnection & {
 };
 
 export type UserMessage = NewMessage | EditMessage | IdentifyMessage;
-export type ChatMessage = BroadcastMessage | SyncMessage;
+export type ChatMessage = BroadcastMessage | SyncMessage | ClearRoomMessage;
 
 const ensureLoadMessages = async (room: Omit<ChatRoom, "id">) => {
   if (!room.messages) {
@@ -78,7 +87,7 @@ const ensureAIParticipant = async (room: ChatRoom) => {
 const updateRoomList = async (
   action: "enter" | "leave",
   websocket: ChatConnection,
-  room: ChatRoom,
+  room: ChatRoom
 ) => {
   const roomList = room.parties.chatrooms.get(SINGLETON_ROOM_ID);
   const user = websocket.user;
@@ -91,6 +100,11 @@ const updateRoomList = async (
       user,
     }),
   });
+};
+
+const removeRoomMessages = async (room: Omit<ChatRoom, "id">) => {
+  await room.storage.delete("messages");
+  room.messages = [];
 };
 
 const newMessage = (msg: Omit<Message, "id" | "at">) =>
@@ -125,8 +139,25 @@ export default {
         JSON.stringify(<SyncMessage>{
           type: "sync",
           messages: room.messages,
-        }),
+        })
       );
+    }
+
+    if (request.method === "DELETE") {
+      await removeRoomMessages(room);
+      room.broadcast(JSON.stringify(<ClearRoomMessage>{ type: "clear" }));
+      room.broadcast(
+        newMessage({
+          from: { id: "system" },
+          text: `Room history cleared`,
+        })
+      );
+
+      return new Response("OK", { status: 200, headers });
+    }
+
+    if (request.method === "OPTIONS") {
+      return new Response("", { status: 204, headers });
     }
 
     return new Response("Not found", { status: 404 });
@@ -139,7 +170,7 @@ export default {
     // keep track of connections in a separate room list
     updateRoomList("enter", connection, room);
     connection.addEventListener("close", () =>
-      updateRoomList("leave", connection, room),
+      updateRoomList("leave", connection, room)
     );
 
     // Send the whole list of messages to the new user
@@ -156,7 +187,7 @@ export default {
             newMessage({
               from: { id: "system" },
               text: `Welcome ${connection.user.username}!`,
-            }),
+            })
           );
         }
       }
@@ -168,7 +199,7 @@ export default {
             newMessage({
               from: { id: "system" },
               text: `You must sign in to send messages to this room`,
-            }),
+            })
           );
         }
 
@@ -177,7 +208,7 @@ export default {
             newMessage({
               from: { id: "system" },
               text: `Message too long`,
-            }),
+            })
           );
         }
 
@@ -198,7 +229,7 @@ export default {
         if (event.type === "edit") {
           room.broadcast(editMessage(message), []);
           room.messages = room.messages!.map((m) =>
-            m.id == event.id ? message : m,
+            m.id == event.id ? message : m
           );
         }
         // persist the messages to storage
@@ -207,7 +238,7 @@ export default {
         // automatically clear the room storage after period of inactivity
         await room.storage.deleteAlarm();
         await room.storage.setAlarm(
-          new Date().getTime() + DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD,
+          new Date().getTime() + DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD
         );
       }
     });
