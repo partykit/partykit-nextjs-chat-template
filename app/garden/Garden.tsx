@@ -23,12 +23,6 @@ export default function Garden() {
   const [starter, setStarter] = useState<Cell>(null);
   const gardenSize = gardenDimensions.width * gardenDimensions.height;
   const state = useSyncedStore(store);
-  /*const [provider, setProvider] = useState<YPartyKitProvider>(
-    new YPartyKitProvider(host, "shared-garden", doc, {
-      party: "garden",
-      connect: false,
-    })
-  );*/
   const [socket, setSocket] = useState<WebSocket | null>(null);
 
   // A list of Cell { lineage, index, emoji } objects
