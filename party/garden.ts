@@ -61,6 +61,7 @@ const GARDEN_TICK = 1500; // milliseconds
 export default {
     onConnect(ws, room) {
         return onConnect(ws, room, {
+            persist: true,
             callback: {
                 async handler(ydoc) {
                     try {
