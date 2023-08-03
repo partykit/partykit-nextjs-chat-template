@@ -61,14 +61,14 @@ export default function Garden() {
 
             <div className="flex flex-col justify-start items-start gap-2">
                 { starter && (
-                    <>
-                    <div className="bg-cyan-100 rounded text-4xl px-6 py-4">{starter.emoji} Plant me!</div>
-                    <p className="text-sm text-stone-400">Click on a square to plant your emoji. <button className="underline" onClick={() => handleGetStarter()}>Re-spin</button></p>
-                    </>
+                    <div className="flex flex-row justify-start items-end gap-4">
+                        <div className="bg-cyan-200 outline outline-2 outline-cyan-300 drop-shadow rounded-lg text-4xl px-6 py-4">{starter.emoji} Plant me!</div>
+                        <p className="text-sm text-stone-400 mb-2 text-lg"><button className="underline" onClick={() => handleGetStarter()}>Re-spin!</button></p>
+                    </div>
                 )}
                 { !starter && (
                     <>
-                    <button className="bg-cyan-100 rounded text-4xl px-6 py-4" onClick={() => handleGetStarter()}>Plant a seed!</button>
+                    <button className="bg-cyan-100 outline outline-2 outline-cyan-300 hover:bg-cyan-200 rounded-lg text-4xl px-6 py-4 drop-shadow-lg hover:drop-shadow" onClick={() => handleGetStarter()}>Get a seed!</button>
                     </>
                 )}
             </div>
