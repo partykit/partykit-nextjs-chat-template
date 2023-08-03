@@ -4,9 +4,9 @@ export default function Footer() {
   return (
     <footer className="p-6 w-full">
       <div className="pt-4 max-w-7xl m-auto text-sm text-stone-400 flex flex-row justify-between">
-        <div className="flex flex-col gap-2 justify-start">
+        <div className="flex flex-col gap-1 justify-start">
           <h2>
-            PartyKit Next.js Chat Template (also a{" "}
+            PartyKit Next.js Starter Kit (also a{" "}
             <Link href="/garden" className="underline">
               tiny garden
             </Link>

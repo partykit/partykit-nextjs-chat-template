@@ -13,7 +13,7 @@ export default async function Header() {
     <header className="p-6 w-full border-b border-stone-300 absolute sticky top-0 bg-white/80 backdrop-blur">
       <nav className="max-w-7xl m-auto flex justify-between items-center">
         <Link href="/">
-          <h1 className="font-medium my-2">Chat Template</h1>
+          <h1 className="font-medium my-2">Starter Kit</h1>
         </Link>
         {user && (
           <div className="flex gap-2 items-center">
