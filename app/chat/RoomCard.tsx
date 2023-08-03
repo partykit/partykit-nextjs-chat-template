@@ -4,6 +4,7 @@ import Avatar from "@/app/components/Avatar";
 
 export default function RoomCard(props: { room: RoomInfo }) {
   const { room } = props;
+  console.log(room)
   return (
     <li className="col-span-1 divide-y divide-stone-200">
       <Link href={`/chat/${room.id}`}>
@@ -21,11 +22,12 @@ export default function RoomCard(props: { room: RoomInfo }) {
             </span>
           </div>
           <div className="p-6">
-            <span className="flex space-x-2">
+            <span className="flex flex-reverse row -space-x-2">
               {room.users?.map((u) => (
                 <Avatar
                   key={u.username}
-                  user={u}
+                  username={u.username}
+                  image={u.image ?? null}
                   variant={u.present ? "normal" : "ghost"}
                 />
               ))}
