@@ -3,6 +3,7 @@
 import { useState, useEffect, useContext, createContext } from "react";
 import usePartySocket from "partysocket/react";
 import type { PartialCursor, CursorsMap } from "@/party/cursors";
+import ConnectionStatus from "@/app/components/ConnectionStatus";
 
 const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
 
@@ -156,6 +157,7 @@ export default function CursorsProvider(props: { children: React.ReactNode }) {
         getCount: getCount,
       }}
     >
+      <ConnectionStatus socket={socket} />
       {props.children}
     </CursorsContext.Provider>
   );
