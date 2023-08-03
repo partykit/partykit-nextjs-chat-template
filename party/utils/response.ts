@@ -4,6 +4,7 @@ const CORS = {
 };
 
 export const json = <T>(data: T, status = 200) =>
+  // @ts-expect-error -- Response.json added in typescript 5.2.0
   Response.json(data, { status, headers: CORS });
 
 export const ok = () => json({ ok: true });
