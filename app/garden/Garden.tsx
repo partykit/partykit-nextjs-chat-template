@@ -32,7 +32,7 @@ export default function Garden() {
 
   useEffect(() => {
     provider.connect();
-  }, [provider]);
+  }, []);
 
   const handlePlantEmoji = (i: number) => {
     if (starter) {
