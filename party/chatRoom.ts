@@ -3,165 +3,54 @@ import type {
   PartyKitRoom,
   PartyKitConnection,
 } from "partykit/server";
-import { SINGLETON_ROOM_ID } from "./chatRooms";
 import { nanoid } from "nanoid";
-import { Token, User, authenticateUser, isSessionValid } from "./utils/auth";
-
-const headers = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
-};
-
-type Sender = {
-  id: string;
-  image?: string;
-};
-
-export type Message = {
-  id: string; // set by server
-  from: Sender;
-  text: string;
-  at: number; // Date
-};
-
-// Outbound message types
-type BroadcastMessage = {
-  type: "new" | "edit";
-} & Message;
-
-type SyncMessage = {
-  type: "sync";
-  messages: Message[];
-};
-
-// Inbound message types
-type NewMessage = {
-  type: "new";
-  text: string;
-  id?: string; // optional, server will set if not provided
-};
-
-type EditMessage = {
-  type: "edit";
-  text: string;
-  id: string;
-};
-
-type ClearRoomMessage = {
-  type: "clear";
-};
-
-type IdentifyMessage = {
-  type: "identify";
-} & Token;
-
-type ChatRoom = PartyKitRoom & {
-  messages?: Message[];
-  ai?: boolean;
-};
-
-type ChatConnection = PartyKitConnection & {
-  user?: User | null;
-};
-
-export type UserMessage = NewMessage | EditMessage | IdentifyMessage;
-export type ChatMessage = BroadcastMessage | SyncMessage | ClearRoomMessage;
-
-const ensureLoadMessages = async (room: Omit<ChatRoom, "id">) => {
-  if (!room.messages) {
-    room.messages = (await room.storage.get<Message[]>("messages")) ?? [];
-  }
-  return room.messages;
-};
-
-const ensureAIParticipant = async (room: ChatRoom) => {
-  if (!room.ai) {
-    room.ai = true;
-    room.parties.ai.get(room.id).fetch({
-      method: "POST",
-      body: JSON.stringify({ action: "connect", id: room.id }),
-    });
-  }
-};
-
-const updateRoomList = async (
-  action: "enter" | "leave",
-  websocket: ChatConnection,
-  room: ChatRoom
-) => {
-  return room.parties.chatrooms.get(SINGLETON_ROOM_ID).fetch({
-    method: "POST",
-    body: JSON.stringify({
-      id: room.id,
-      connections: room.connections.size,
-      user: websocket.user,
-      action,
-    }),
-  });
-};
-
-const removeRoomFromRoomList = async (room: ChatRoom) => {
-  return room.parties.chatrooms.get(SINGLETON_ROOM_ID).fetch({
-    method: "POST",
-    body: JSON.stringify({
-      id: room.id,
-      action: "delete",
-    }),
-  });
-};
-
-const removeRoomMessages = async (room: Omit<ChatRoom, "id">) => {
-  await room.storage.delete("messages");
-  room.messages = [];
-};
-
-const newMessage = (msg: Omit<Message, "id" | "at">) =>
-  JSON.stringify(<BroadcastMessage>{
-    type: "new",
-    id: nanoid(),
-    at: Date.now(),
-    ...msg,
-  });
-
-const editMessage = (msg: Omit<Message, "at">) =>
-  JSON.stringify(<BroadcastMessage>{
-    type: "edit",
-    at: Date.now(),
-    ...msg,
-  });
-
-const sync = (messages: Message[]) =>
-  JSON.stringify(<SyncMessage>{ type: "sync", messages });
+import { User, authenticateUser, isSessionValid } from "./utils/auth";
+import { SINGLETON_ROOM_ID } from "./chatRooms";
+import type {
+  Message,
+  SyncMessage,
+  UserMessage,
+  ClearRoomMessage,
+} from "./utils/message";
+import {
+  editMessage,
+  newMessage,
+  syncMessage,
+  systemMessage,
+} from "./utils/message";
+import { json, notFound, ok } from "./utils/response";
 
 const DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD = 1000 * 60 * 60 * 24; // 24 hours
 
-// server.ts
-export default {
-  async onRequest(request, room: ChatRoom) {
-    if (!room.messages) {
-      room.messages = (await room.storage.get<Message[]>("messages")) ?? [];
-    }
+// track additional information on room and connection objects
+type ChatRoom = PartyKitRoom & { messages?: Message[]; ai?: boolean };
+type ChatConnection = PartyKitConnection & { user?: User | null };
 
+/**
+ * This party manages the state and behaviour of an individual chat room
+ */
+export default {
+  /**
+   * Responds to HTTP requests to /parties/chatroom/:roomId endpoint
+   */
+  async onRequest(request, room: ChatRoom) {
+    const messages = await ensureLoadMessages(room);
+
+    // mark room as created by storing its id in object storage
     if (request.method === "POST") {
       await room.storage.put("id", room.id);
-      return new Response("OK", { status: 200, headers });
+      return ok();
     }
 
+    // return list of messages for server rendering pages
     if (request.method === "GET") {
-      // TODO: Remove this after migration complete
-      // await room.storage.put("id", room.id);
       if (await room.storage.get("id")) {
-        return new Response(
-          JSON.stringify(<SyncMessage>{
-            type: "sync",
-            messages: room.messages,
-          })
-        );
+        return json<SyncMessage>({ type: "sync", messages });
       }
-
-      return new Response("Not found", { status: 404 });
+      return notFound();
     }
 
+    // clear room history
     if (request.method === "DELETE") {
       await removeRoomMessages(room);
       room.broadcast(JSON.stringify(<ClearRoomMessage>{ type: "clear" }));
@@ -171,36 +60,38 @@ export default {
           text: `Room history cleared`,
         })
       );
-
-      return new Response("OK", { status: 200, headers });
+      return ok();
     }
 
+    // respond to cors preflight requests
     if (request.method === "OPTIONS") {
-      return new Response("", { status: 204, headers });
+      return ok();
     }
 
-    return new Response("Not found", { status: 404 });
+    return notFound();
   },
 
+  /**
+   * Executes when a new WebSocket connection is made to the room
+   */
   async onConnect(connection: ChatConnection, room: ChatRoom) {
     await ensureLoadMessages(room);
     await ensureAIParticipant(room);
 
-    // keep track of connections in a separate room list
+    // send the whole list of messages to user when they connect
+    connection.send(syncMessage(room.messages ?? []));
+
+    // keep track of connections
     updateRoomList("enter", connection, room);
     connection.addEventListener("close", () =>
       updateRoomList("leave", connection, room)
     );
 
-    // Send the whole list of messages to the new user
-    connection.send(sync(room.messages ?? []));
-
-    connection.addEventListener("message", async (evt) => {
-      const event = JSON.parse(evt.data as string) as UserMessage;
-
-      if (event.type === "identify") {
-        connection.user = await authenticateUser(room, event);
-        if (connection.user) {
+    // handle incoming messages from client
+    const onUserMessage = async (message: UserMessage) => {
+      // handle user authentication
+      if (message.type === "identify") {
+        if ((connection.user = await authenticateUser(room, message))) {
           updateRoomList("enter", connection, room);
           return connection.send(
             newMessage({
@@ -211,44 +102,37 @@ export default {
         }
       }
 
-      if (event.type === "new" || event.type === "edit") {
+      // handle user messages
+      if (message.type === "new" || message.type === "edit") {
         const user = connection.user;
         if (!isSessionValid(user)) {
           return connection.send(
-            newMessage({
-              from: { id: "system" },
-              text: `You must sign in to send messages to this room`,
-            })
+            systemMessage("You must sign in to send messages to this room")
           );
         }
 
-        if (event.text.length > 1000) {
-          return connection.send(
-            newMessage({
-              from: { id: "system" },
-              text: `Message too long`,
-            })
-          );
+        if (message.text.length > 1000) {
+          return connection.send(systemMessage("Message too long"));
         }
 
-        const message = <Message>{
-          id: event.id ?? nanoid(),
+        const payload = <Message>{
+          id: message.id ?? nanoid(),
           from: { id: user.username, image: user.image },
-          text: event.text,
+          text: message.text,
           at: Date.now(),
         };
 
         // send new message to all connections
-        if (event.type === "new") {
-          room.broadcast(newMessage(message), []);
-          room.messages!.push(message);
+        if (message.type === "new") {
+          room.broadcast(newMessage(payload), []);
+          room.messages!.push(payload);
         }
 
         // send edited message to all connections
-        if (event.type === "edit") {
-          room.broadcast(editMessage(message), []);
+        if (message.type === "edit") {
+          room.broadcast(editMessage(payload), []);
           room.messages = room.messages!.map((m) =>
-            m.id == event.id ? message : m
+            m.id == message.id ? payload : m
           );
         }
         // persist the messages to storage
@@ -260,15 +144,78 @@ export default {
           new Date().getTime() + DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD
         );
       }
+    };
+
+    connection.addEventListener("message", (event) => {
+      const message = JSON.parse(event.data as string) as UserMessage;
+      onUserMessage(message).catch((error) => {
+        console.log("Error while handling user message", error);
+      });
     });
   },
 
+  /**
+   * A scheduled job that executes when the room storage alarm is triggered
+   */
   async onAlarm(room: Omit<ChatRoom, "id">) {
-    console.log("Automatically deleting old messages after inactivity...");
+    // alarms don't have access to room id, so retrieve it from storage
     const id = await room.storage.get<string>("id");
     if (id) {
-      removeRoomMessages(room);
-      removeRoomFromRoomList({ ...room, id });
+      await removeRoomMessages(room);
+      await removeRoomFromRoomList({ ...room, id });
     }
   },
 } satisfies PartyKitServer;
+
+/** Retrieve messages from room storage and store them on room instance */
+async function ensureLoadMessages(room: Omit<ChatRoom, "id">) {
+  if (!room.messages) {
+    room.messages = (await room.storage.get<Message[]>("messages")) ?? [];
+  }
+  return room.messages;
+}
+
+/** Request the AI bot party to connect to this room, if not already connected */
+async function ensureAIParticipant(room: ChatRoom) {
+  if (!room.ai) {
+    room.ai = true;
+    room.parties.ai.get(room.id).fetch({
+      method: "POST",
+      body: JSON.stringify({ action: "connect", id: room.id }),
+    });
+  }
+}
+
+/** Send room presence to the room listing party */
+async function updateRoomList(
+  action: "enter" | "leave",
+  websocket: ChatConnection,
+  room: ChatRoom
+) {
+  return room.parties.chatrooms.get(SINGLETON_ROOM_ID).fetch({
+    method: "POST",
+    body: JSON.stringify({
+      id: room.id,
+      connections: room.connections.size,
+      user: websocket.user,
+      action,
+    }),
+  });
+}
+
+/** Remove this room from the room listing party */
+async function removeRoomFromRoomList(room: ChatRoom) {
+  return room.parties.chatrooms.get(SINGLETON_ROOM_ID).fetch({
+    method: "POST",
+    body: JSON.stringify({
+      id: room.id,
+      action: "delete",
+    }),
+  });
+}
+
+/** Clear room storage */
+async function removeRoomMessages(room: Omit<ChatRoom, "id">) {
+  await room.storage.delete("messages");
+  room.messages = [];
+}

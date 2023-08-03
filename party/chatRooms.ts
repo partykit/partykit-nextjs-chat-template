@@ -1,24 +1,28 @@
 import { PartyKitRoom, PartyKitServer } from "partykit/server";
 import { User } from "./utils/auth";
+import { json, notFound } from "./utils/response";
 
-const headers = {
-  "Access-Control-Allow-Origin": "*",
-};
-
+/**
+ * The chatRooms party's purpose is to keep track of all chat rooms, so we want
+ * every client to connect to the same room instance by sharing the same room id.
+ */
 export const SINGLETON_ROOM_ID = "list";
 
-export type RoomInfoUpdate = {
+/** Chat room sends an update when participants join/leave */
+export type RoomInfoUpdateRequest = {
   id: string;
   connections: number;
   action: "enter" | "leave";
   user?: User;
 };
 
-export type RoomDeleteUpdate = {
+/** Chat room notifies us when it's deleted  */
+export type RoomDeleteRequest = {
   id: string;
   action: "delete";
 };
 
+/** Chat rooms sends us information about connections and users */
 export type RoomInfo = {
   id: string;
   connections: number;
@@ -31,23 +35,53 @@ export type RoomInfo = {
   }[];
 };
 
+export default {
+  onMessage() {
+    // defining an onMessage callback opts the room into using a hibernation
+    // mode, which allows for a higher number of concurrent connections
+  },
+
+  async onConnect(connection, room) {
+    // when a websocket connection is established, send them a list of rooms
+    connection.send(JSON.stringify(await getActiveRooms(room)));
+  },
+
+  async onRequest(req, room) {
+    // we only allow one instance of chatRooms party
+    if (room.id !== SINGLETON_ROOM_ID) return notFound();
+
+    // Clients fetch list of rooms for server rendering pages via HTTP GET
+    if (req.method === "GET") return json(await getActiveRooms(room));
+
+    // Chatrooms report their connections via HTTP POST
+    // update room info and notify all connected clients
+    if (req.method === "POST") {
+      const roomList = await updateRoomInfo(req, room);
+      room.broadcast(JSON.stringify(roomList));
+      return json(roomList);
+    }
+
+    // admin api for clearing all rooms (not used in UI)
+    if (req.method === "DELETE") {
+      await room.storage.deleteAll();
+      return json({ message: "All room history cleared" });
+    }
+
+    return notFound();
+  },
+} satisfies PartyKitServer;
+
+/** Fetches list of active rooms */
 async function getActiveRooms(room: PartyKitRoom): Promise<RoomInfo[]> {
   const rooms = await room.storage.list<RoomInfo>();
-
-  // migration: remove old numeric values
-  // TODO: remove this after next deploy
-  for (const [key, info] of rooms) {
-    if (typeof info === "number") {
-      await room.storage.delete(key);
-      rooms.delete(key);
-    }
-  }
-
   return [...rooms.values()];
 }
 
+/** Updates list of active rooms with information received from chatroom */
 async function updateRoomInfo(req: Request, room: PartyKitRoom) {
-  const update = (await req.json()) as RoomInfoUpdate | RoomDeleteUpdate;
+  const update = (await req.json()) as
+    | RoomInfoUpdateRequest
+    | RoomDeleteRequest;
 
   if (update.action === "delete") {
     await room.storage.delete(update.id);
@@ -90,37 +124,3 @@ async function updateRoomInfo(req: Request, room: PartyKitRoom) {
   await room.storage.put(update.id, info);
   return getActiveRooms(room);
 }
-
-export default {
-  async onConnect(connection, room) {
-    const roomList = await getActiveRooms(room);
-    connection.send(JSON.stringify(roomList));
-  },
-  onMessage() {
-    // allow connections
-  },
-
-  async onRequest(req, room) {
-    // we only allow one instance of chatRooms party
-    if (room.id !== SINGLETON_ROOM_ID)
-      return new Response("Room not found", { status: 404 });
-
-    if (req.method === "GET") {
-      const roomList = await getActiveRooms(room);
-      return new Response(JSON.stringify(roomList), { status: 200, headers });
-    }
-
-    if (req.method === "POST") {
-      const roomList = await updateRoomInfo(req, room);
-      room.broadcast(JSON.stringify(roomList));
-      return new Response(JSON.stringify(roomList), { status: 200 });
-    }
-
-    if (req.method === "DELETE") {
-      await room.storage.deleteAll();
-      return new Response("Kaboom!", { status: 200 });
-    }
-
-    return new Response("Method not implemented", { status: 404 });
-  },
-} satisfies PartyKitServer;

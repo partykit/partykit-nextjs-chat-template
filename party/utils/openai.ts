@@ -11,13 +11,13 @@ export async function getChatCompletionResponse(
   env: Record<string, any>,
   chain: ChatCompletionRequestMessage[],
   onStartCallback: () => void,
-  onTokenCallback: (token: string) => void,
+  onTokenCallback: (token: string) => void
 ) {
   const openai = new OpenAIApi(
     new Configuration({
       organization: env.OPENAI_API_ORGANIZATION,
       apiKey: env.OPENAI_API_KEY,
-    }),
+    })
   );
 
   const prompt = chain.map((message) => {
@@ -36,7 +36,8 @@ export async function getChatCompletionResponse(
   });
 
   // @ts-ignore
-  for await (const token of stream) {
+  for await (const _ of stream) {
+    // no-op, just read the stream, onToken callback above will handle the tokens
   }
 
   return null;

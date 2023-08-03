@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Message } from "@/party/chatRoom";
+import type { Message } from "@/party/utils/message";
 import Avatar from "@/app/components/Avatar";
 
 export default function RoomMessage(props: {
@@ -12,7 +12,7 @@ export default function RoomMessage(props: {
   // Format the date on the client to avoid hydration mismatch
   useEffect(
     () => setFormattedDate(new Date(message.at).toLocaleTimeString()),
-    [message.at],
+    [message.at]
   );
 
   if (message.from.id === "system") {
