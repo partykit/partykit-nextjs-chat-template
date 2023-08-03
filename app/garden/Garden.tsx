@@ -45,12 +45,12 @@ export default function Garden() {
 
     return (
         <div className="flex flex-col gap-6 justify-start items-start">
-            <div className="grid grid-cols-10 grid-rows-10">
+            <div className="grid grid-cols-10 grid-rows-10 bg-lime-200">
                 { [...Array(gardenSize)].map((_, i) => {
                     const cell = state.garden[i] ?? null;
                     return <button
                         key={i}
-                        className="bg-lime-200 w-10 h-10 flex justify-center items-center hover:bg-lime-300 disabled:cursor-not-allowed text-4xl overflow-clip"
+                        className="bg-lime-200 w-10 h-10 flex justify-center items-center hover:bg-lime-300 hover:rounded-full disabled:rounded-none disabled:bg-lime-200 disabled:cursor-not-allowed text-4xl overflow-clip"
                         disabled={starter === null || cell !== null}
                         onClick={() => handlePlantEmoji(i)}
                         >
