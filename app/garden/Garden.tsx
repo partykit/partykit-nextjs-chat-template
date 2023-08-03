@@ -46,7 +46,7 @@ export default function Garden() {
                     const cell = state.garden[i] ?? null;
                     return <button
                         key={i}
-                        className="bg-lime-100 w-10 h-10 flex justify-center items-center disabled:bg-stone-100 hover:bg-lime-200 disabled:cursor-not-allowed text-4xl overflow-clip"
+                        className="bg-lime-200 w-10 h-10 flex justify-center items-center hover:bg-lime-300 disabled:cursor-not-allowed text-4xl overflow-clip"
                         disabled={starter === null || cell !== null}
                         onClick={() => handlePlantEmoji(i)}
                         >
