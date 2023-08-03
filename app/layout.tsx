@@ -23,8 +23,10 @@ export default function RootLayout({
         <Providers>
         <div className="flex flex-col justify-between relative" style={{minHeight: "100dvh"}}>
           <Header />
-          <div className="max-w-7xl m-auto flex-grow w-full flex flex-col justify-start items-start p-6">
+          <div className="flex-grow p-6">
+            <div className="max-w-7xl m-auto w-full flex flex-col justify-start items-start">
             {children}
+            </div>
           </div>
           <Footer />
         </div>
