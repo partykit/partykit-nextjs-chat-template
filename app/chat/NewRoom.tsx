@@ -1,12 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { FormEvent } from "react";
+
+const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
+const protocol =
+  host?.startsWith("localhost") || host?.startsWith("127.0.0.1")
+    ? "http"
+    : "https";
 
 export default function NewRoom(props: { slug: string }) {
   const { slug } = props;
   const router = useRouter();
 
-  const handleClick = () => {
+  const handleClick = async (e: FormEvent) => {
+    e.preventDefault();
+    await fetch(`${protocol}://${host}/parties/chatroom/${slug}`, {
+      method: "POST",
+    });
     router.push(`/chat/${slug}`);
   };
 

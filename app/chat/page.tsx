@@ -16,6 +16,7 @@ export default async function RoomListPagePage() {
   const res = await fetch(partyUrl, { next: { revalidate: 0 } });
   const rooms = ((await res.json()) ?? []) as RoomInfo[];
 
+  console.log("rooms", rooms);
   const options: RandomWordOptions<3> = {
     format: "kebab",
     categories: {

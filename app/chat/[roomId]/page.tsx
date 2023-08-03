@@ -24,31 +24,38 @@ export default async function ChatRoomPage({
   // fetch initial data on the server
   const url = `${protocol}://${host}/parties/${party}/${params.roomId}`;
   const res = await fetch(url, { next: { revalidate: 0 } });
-  const room = await res.json();
+  const room = res.status === 404 ? null : await res.json();
   const session = await getServerSession(authOptions);
   const user = session?.user as User | null;
 
-  console.log("Server rendering with messages", room.messages);
+  console.log("Server rendering", room?.messages);
 
   return (
     <div className="w-full flex flex-col gap-4 justify-between items-start">
       <Link href="/chat" className="text-stone-400">
         &lt;- All Rooms
       </Link>
-      <div className="w-full flex flex-row justify-between items-start pb-6">
-        <div>
-          <h1 className="text-4xl font-medium">{params.roomId}</h1>
-          <ClearRoomButton roomId={params.roomId} />
-        </div>
-        <PresenceBar roomId={params.roomId} />
-      </div>
-      <Room
-        host={host}
-        party={party}
-        user={user}
-        room={params.roomId}
-        messages={room.messages ?? []}
-      />
+      {room ? (
+        <>
+          <div className="w-full flex flex-row justify-between items-start pb-6">
+            <div>
+              <h1 className="text-4xl font-medium">{params.roomId}</h1>
+              <ClearRoomButton roomId={params.roomId} />
+            </div>
+            <PresenceBar roomId={params.roomId} />
+          </div>
+
+          <Room
+            host={host}
+            party={party}
+            user={user}
+            room={params.roomId}
+            messages={room.messages ?? []}
+          />
+        </>
+      ) : (
+        <h1 className="text-4xl font-medium">Room not found</h1>
+      )}
     </div>
   );
 }
