@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { syncedStore, getYjsDoc } from "@syncedstore/core";
 import { useSyncedStore } from "@syncedstore/react";
 import YPartyKitProvider from "y-partykit/provider";
@@ -23,7 +23,11 @@ export default function Garden() {
         host,
         "shared-garden",
         doc,
-        {party: "garden"});
+        {party: "garden", connect: false});
+
+    useEffect(() => {
+        provider.connect();
+    }, [provider]);
 
     const handlePlantEmoji = (i: number) => {
         if (starter) {
