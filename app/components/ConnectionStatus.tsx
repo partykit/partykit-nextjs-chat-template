@@ -26,28 +26,32 @@ const readyStates = {
   },
 };
 
-export default function ConnectionStatus(props: { socket: PartySocket }) {
+export default function ConnectionStatus(props: {
+  socket: PartySocket | WebSocket | null;
+}) {
   const { socket } = props;
-  const [readyState, setReadyState] = useState<number>(socket.readyState);
+  const [readyState, setReadyState] = useState<number>(socket?.readyState ?? 3);
   const display = readyStates[readyState as keyof typeof readyStates];
 
   useEffect(() => {
-    const onStateChange = () => {
-      setReadyState(socket.readyState);
-    };
+    if (socket) {
+      const onStateChange = () => {
+        setReadyState(socket.readyState);
+      };
 
-    socket.addEventListener("open", onStateChange);
-    socket.addEventListener("close", onStateChange);
+      socket.addEventListener("open", onStateChange);
+      socket.addEventListener("close", onStateChange);
 
-    return () => {
-      socket.removeEventListener("open", onStateChange);
-      socket.removeEventListener("close", onStateChange);
-    };
+      return () => {
+        socket.removeEventListener("open", onStateChange);
+        socket.removeEventListener("close", onStateChange);
+      };
+    }
   }, [socket]);
 
   return (
-    <div className="absolute top-2 left-0 w-full flex justify-center">
-      <div className="flex gap-2 justify-center items-center bg-stone-50 rounded-full drop-shadow-md border border-stone-300 px-3 py-2">
+    <div className="fixed top-2 left-0 w-full flex justify-center">
+      <div className="flex gap-2 justify-center items-center bg-stone-50 rounded-full shadow-md border border-stone-300 px-3 py-2">
         <p className="text-xs font-base uppercase tracking-wider leading-none text-stone-500">
           {display.text}
         </p>

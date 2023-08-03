@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { syncedStore, getYjsDoc } from "@syncedstore/core";
 import { useSyncedStore } from "@syncedstore/react";
 import YPartyKitProvider from "y-partykit/provider";
@@ -11,6 +11,8 @@ import {
   yDocShape,
   gardenDimensions,
 } from "@/party/garden";
+import ConnectionStatus from "../components/ConnectionStatus";
+import Display from "./Display";
 
 const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
 
@@ -21,18 +23,39 @@ export default function Garden() {
   const [starter, setStarter] = useState<Cell>(null);
   const gardenSize = gardenDimensions.width * gardenDimensions.height;
   const state = useSyncedStore(store);
+  /*const [provider, setProvider] = useState<YPartyKitProvider>(
+    new YPartyKitProvider(host, "shared-garden", doc, {
+      party: "garden",
+      connect: false,
+    })
+  );*/
+  const [socket, setSocket] = useState<WebSocket | null>(null);
 
   // A list of Cell { lineage, index, emoji } objects
   const starterEmojis = getStarterEmojis();
 
-  const provider = new YPartyKitProvider(host, "shared-garden", doc, {
-    party: "garden",
-    connect: false,
-  });
+  const provider = useMemo(
+    () =>
+      new YPartyKitProvider(host, "shared-garden", doc, {
+        party: "garden",
+        connect: false,
+      }),
+    []
+  );
 
   useEffect(() => {
+    const onStatus = () => setSocket(provider.ws);
     provider.connect();
+    provider.on("status", onStatus);
+    return () => {
+      provider.off("status", onStatus);
+      provider.disconnect();
+    };
   }, []);
+
+  useEffect(() => {
+    setSocket(provider.ws);
+  }, [provider]);
 
   const handlePlantEmoji = (i: number) => {
     if (starter) {
@@ -50,47 +73,44 @@ export default function Garden() {
   };
 
   return (
-    <div className="flex flex-col gap-6 justify-start items-start">
-      <div className="grid grid-cols-10 grid-rows-10 bg-lime-200">
-        {[...Array(gardenSize)].map((_, i) => {
-          const cell = state.garden[i] ?? null;
-          return (
-            <button
-              key={i}
-              className="bg-lime-200 w-10 h-10 flex justify-center items-center hover:bg-lime-300 hover:rounded-full disabled:rounded-none disabled:bg-lime-200 disabled:cursor-not-allowed text-4xl overflow-clip"
-              disabled={starter === null || cell !== null}
-              onClick={() => handlePlantEmoji(i)}
-            >
-              {cell ? cell.emoji : ""}
-            </button>
-          );
-        })}
-      </div>
+    <>
+      <div className="flex flex-col gap-6 justify-start items-start">
+        <Display
+          garden={state.garden as Garden}
+          handlePlantEmoji={handlePlantEmoji}
+          gardenSize={gardenSize}
+          starterIsEmpty={starter === null}
+        />
 
-      <div className="flex flex-col justify-start items-start gap-2">
-        {starter && (
-          <div className="flex flex-row justify-start items-end gap-4">
-            <div className="bg-cyan-200 outline outline-2 outline-cyan-300 drop-shadow rounded-lg text-4xl px-6 py-4">
-              {starter.emoji} Plant me!
+        <div className="flex flex-col justify-start items-start gap-2">
+          {starter && (
+            <div className="flex flex-row justify-start items-end gap-4">
+              <div className="bg-cyan-200 outline outline-2 outline-cyan-300 drop-shadow rounded-lg text-4xl px-6 py-4">
+                {starter.emoji} Plant me!
+              </div>
+              <p className="text-sm text-stone-400 mb-2 text-lg">
+                <button
+                  className="underline"
+                  onClick={() => handleGetStarter()}
+                >
+                  Re-spin!
+                </button>
+              </p>
             </div>
-            <p className="text-sm text-stone-400 mb-2 text-lg">
-              <button className="underline" onClick={() => handleGetStarter()}>
-                Re-spin!
+          )}
+          {!starter && (
+            <>
+              <button
+                className="bg-cyan-100 outline outline-2 outline-cyan-300 hover:bg-cyan-200 rounded-lg text-4xl px-6 py-4 drop-shadow-lg hover:drop-shadow"
+                onClick={() => handleGetStarter()}
+              >
+                Get a seed!
               </button>
-            </p>
-          </div>
-        )}
-        {!starter && (
-          <>
-            <button
-              className="bg-cyan-100 outline outline-2 outline-cyan-300 hover:bg-cyan-200 rounded-lg text-4xl px-6 py-4 drop-shadow-lg hover:drop-shadow"
-              onClick={() => handleGetStarter()}
-            >
-              Get a seed!
-            </button>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+      <ConnectionStatus socket={socket} />
+    </>
   );
 }
