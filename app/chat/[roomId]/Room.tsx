@@ -60,6 +60,7 @@ export const Room: React.FC<{
           prev.map((m) => (m.id === message.id ? message : m))
         );
       }
+      scrollToBottom();
     },
   });
 
@@ -79,14 +80,17 @@ export const Room: React.FC<{
     if (text?.trim()) {
       socket.send(JSON.stringify({ type: "new", text }));
       event.currentTarget.message.value = "";
-      // Scroll page to bottom
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        left: 0,
-        behavior: "smooth",
-      });
+      scrollToBottom();
     }
   };
+
+  function scrollToBottom() {
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      left: 0,
+      behavior: "smooth",
+    });
+  }
 
   return (
     <div className="h-full w-full flex flex-col gap-6">
