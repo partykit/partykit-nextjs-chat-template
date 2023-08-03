@@ -25,7 +25,7 @@ function OtherCursorImpl(props: { cursor: Cursor }) {
     if (!elm) return;
     elm.style.setProperty(
       "transform",
-      `translate(${point[0]}px, ${point[1]}px)`
+      `translate(${point[0]}px, ${point[1]}px)`,
     );
   }, []);
 

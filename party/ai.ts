@@ -39,7 +39,10 @@ const join = (socket: PartyKitConnection["socket"], room: PartyKitRoom) => {
     if (!identified) {
       identified = true;
       socket.send(
-        JSON.stringify(<UserMessage>{ type: "identify", username: AI_USERNAME })
+        JSON.stringify(<UserMessage>{
+          type: "identify",
+          username: AI_USERNAME,
+        }),
       );
     }
 
@@ -70,9 +73,9 @@ const join = (socket: PartyKitConnection["socket"], room: PartyKitRoom) => {
             // edit the message as tokens arrive
             text += token;
             socket.send(
-              JSON.stringify(<UserMessage>{ type: "edit", id, text })
+              JSON.stringify(<UserMessage>{ type: "edit", id, text }),
             );
-          }
+          },
         ).finally(() => {
           typing = false;
         });

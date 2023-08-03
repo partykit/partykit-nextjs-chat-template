@@ -26,7 +26,6 @@ export default async function RoomListPagePage() {
 
   const slug = generateSlug(3, options);
 
-
   return (
     <div className="w-full flex flex-col gap-6">
       <h1 className="text-4xl font-medium">Chat Rooms</h1>

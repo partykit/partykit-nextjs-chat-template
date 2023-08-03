@@ -21,15 +21,18 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-        <div className="flex flex-col justify-between relative" style={{minHeight: "100dvh"}}>
-          <Header />
-          <div className="flex-grow p-6">
-            <div className="max-w-7xl m-auto w-full flex flex-col justify-start items-start">
-            {children}
+          <div
+            className="flex flex-col justify-between relative"
+            style={{ minHeight: "100dvh" }}
+          >
+            <Header />
+            <div className="flex-grow p-6">
+              <div className="max-w-7xl m-auto w-full flex flex-col justify-start items-start">
+                {children}
+              </div>
             </div>
+            <Footer />
           </div>
-          <Footer />
-        </div>
         </Providers>
       </body>
     </html>

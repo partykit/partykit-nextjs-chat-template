@@ -12,7 +12,7 @@ export default function RoomMessage(props: {
   // Format the date on the client to avoid hydration mismatch
   useEffect(
     () => setFormattedDate(new Date(message.at).toLocaleTimeString()),
-    [message.at]
+    [message.at],
   );
 
   if (message.from.id === "system") {
@@ -28,7 +28,10 @@ export default function RoomMessage(props: {
         className={`flex justify-start gap-2 ${isMe ? "flex-row-reverse" : ""}`}
       >
         <div className="grow-0">
-          <Avatar username={message.from.id} image={message.from.image ?? null} />
+          <Avatar
+            username={message.from.id}
+            image={message.from.image ?? null}
+          />
         </div>
         <div className={`flex flex-col gap-1 ${isMe ? "items-end" : ""}`}>
           <span className="bg-stone-100 px-2 py-1 rounded-xl">

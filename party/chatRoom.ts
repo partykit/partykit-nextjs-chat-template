@@ -78,7 +78,7 @@ const ensureAIParticipant = async (room: ChatRoom) => {
 const updateRoomList = async (
   action: "enter" | "leave",
   websocket: ChatConnection,
-  room: ChatRoom
+  room: ChatRoom,
 ) => {
   const roomList = room.parties.chatrooms.get(SINGLETON_ROOM_ID);
   const user = websocket.user;
@@ -125,7 +125,7 @@ export default {
         JSON.stringify(<SyncMessage>{
           type: "sync",
           messages: room.messages,
-        })
+        }),
       );
     }
 
@@ -139,7 +139,7 @@ export default {
     // keep track of connections in a separate room list
     updateRoomList("enter", connection, room);
     connection.addEventListener("close", () =>
-      updateRoomList("leave", connection, room)
+      updateRoomList("leave", connection, room),
     );
 
     // Send the whole list of messages to the new user
@@ -156,7 +156,7 @@ export default {
             newMessage({
               from: { id: "system" },
               text: `Welcome ${connection.user.username}!`,
-            })
+            }),
           );
         }
       }
@@ -168,7 +168,7 @@ export default {
             newMessage({
               from: { id: "system" },
               text: `You must sign in to send messages to this room`,
-            })
+            }),
           );
         }
 
@@ -177,7 +177,7 @@ export default {
             newMessage({
               from: { id: "system" },
               text: `Message too long`,
-            })
+            }),
           );
         }
 
@@ -198,7 +198,7 @@ export default {
         if (event.type === "edit") {
           room.broadcast(editMessage(message), []);
           room.messages = room.messages!.map((m) =>
-            m.id == event.id ? message : m
+            m.id == event.id ? message : m,
           );
         }
         // persist the messages to storage
@@ -207,7 +207,7 @@ export default {
         // automatically clear the room storage after period of inactivity
         await room.storage.deleteAlarm();
         await room.storage.setAlarm(
-          new Date().getTime() + DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD
+          new Date().getTime() + DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD,
         );
       }
     });

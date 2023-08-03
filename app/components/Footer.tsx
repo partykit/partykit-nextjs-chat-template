@@ -6,8 +6,11 @@ export default function Footer() {
       <div className="pt-4 max-w-7xl m-auto text-sm text-stone-400 flex flex-row justify-between">
         <div className="flex flex-col gap-2 justify-start">
           <h2>
-            PartyKit Next.js Chat Template {" "}
-            (also a <Link href="/garden" className="underline">tiny garden</Link>)
+            PartyKit Next.js Chat Template (also a{" "}
+            <Link href="/garden" className="underline">
+              tiny garden
+            </Link>
+            )
           </h2>
           <p>
             Built with{" "}
@@ -21,12 +24,12 @@ export default function Footer() {
           </p>
         </div>
         <div className="flex flex-col justify-end">
-        <Link
-              href="https://github.com/partykit/partykit-nextjs-chat-template"
-              className="bg-stone-200 hover:bg-stone-300 p-2 rounded text-stone-600"
-            >
-              View on GitHub
-            </Link>
+          <Link
+            href="https://github.com/partykit/partykit-nextjs-chat-template"
+            className="bg-stone-200 hover:bg-stone-300 p-2 rounded text-stone-600"
+          >
+            View on GitHub
+          </Link>
         </div>
       </div>
     </footer>

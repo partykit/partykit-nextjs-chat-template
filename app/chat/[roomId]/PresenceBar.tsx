@@ -1,33 +1,37 @@
 "use client";
 
-import { useState } from "react"
-import usePartySocket from "partysocket/react"
+import { useState } from "react";
+import usePartySocket from "partysocket/react";
 import { RoomInfo, SINGLETON_ROOM_ID } from "@/party/chatRooms";
 import Avatar from "@/app/components/Avatar";
 
 const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
 
 export default function PresenceBar(props: { roomId: string }) {
-    const [room, setRoom] = useState<RoomInfo | null>(null)
+  const [room, setRoom] = useState<RoomInfo | null>(null);
 
-    usePartySocket({
-        host,
-        party: "chatrooms",
-        room: SINGLETON_ROOM_ID,
-        onMessage(event: MessageEvent<string>) {
-            const rooms = JSON.parse(event.data) as RoomInfo[];
-            const room = rooms.find((room) => room.id === props.roomId);
-            setRoom(room ?? null);
-        },
-    });
+  usePartySocket({
+    host,
+    party: "chatrooms",
+    room: SINGLETON_ROOM_ID,
+    onMessage(event: MessageEvent<string>) {
+      const rooms = JSON.parse(event.data) as RoomInfo[];
+      const room = rooms.find((room) => room.id === props.roomId);
+      setRoom(room ?? null);
+    },
+  });
 
-    if (!room) return;
+  if (!room) return;
 
-    return (
-        <div className="flex flex-reverse row -space-x-2">
-            {room.users.map((user) => (
-                <Avatar key={user.username} username={user.username} image={user.image ?? null} />
-            ))}
-        </div>
-    )
+  return (
+    <div className="flex flex-reverse row -space-x-2">
+      {room.users.map((user) => (
+        <Avatar
+          key={user.username}
+          username={user.username}
+          image={user.image ?? null}
+        />
+      ))}
+    </div>
+  );
 }

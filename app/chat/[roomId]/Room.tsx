@@ -21,7 +21,7 @@ const identify = async (socket: PartySocket) => {
         username: res.session.username,
         sessionToken: res.sessionToken,
         csrfToken: csrfToken,
-      })
+      }),
     );
   }
 };
@@ -56,7 +56,7 @@ export const Room: React.FC<{
       if (message.type === "new") setMessages((prev) => [...prev, message]);
       if (message.type === "edit") {
         setMessages((prev) =>
-          prev.map((m) => (m.id === message.id ? message : m))
+          prev.map((m) => (m.id === message.id ? message : m)),
         );
       }
     },

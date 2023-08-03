@@ -68,7 +68,7 @@ async function updateRoomInfo(req: Request, room: PartyKitRoom) {
       info.users = info.users.map((u) =>
         u.username === user.username
           ? { ...u, present: false, leftAt: new Date().toISOString() }
-          : u
+          : u,
       );
     }
   }
