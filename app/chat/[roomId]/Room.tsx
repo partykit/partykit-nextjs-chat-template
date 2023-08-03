@@ -7,6 +7,7 @@ import { getCsrfToken, useSession } from "next-auth/react";
 import PartySocket from "partysocket";
 import Link from "next/link";
 import RoomMessage from "./RoomMessage";
+import ConnectionStatus from "@/app/components/ConnectionStatus";
 
 const identify = async (socket: PartySocket) => {
   // identify user in the partykit room
@@ -93,44 +94,47 @@ export const Room: React.FC<{
   }
 
   return (
-    <div className="h-full w-full flex flex-col gap-6">
-      {messages.length > 0 ? (
-        <ul className="flex flex-col gap-3">
-          {messages.map((message) => (
-            <RoomMessage
-              key={message.id}
-              message={message}
-              isMe={message.from.id === user?.username}
-            />
-          ))}
-        </ul>
-      ) : (
-        <p className="italic">No messages yet</p>
-      )}
-      {session.status === "authenticated" ? (
-        <form onSubmit={handleSubmit} className="sticky bottom-6">
-          <input
-            placeholder="Send message..."
-            className="border border-stone-400 p-3 bg-stone-100 min-w-full rounded"
-            type="text"
-            name="message"
-          ></input>
-        </form>
-      ) : session.status === "unauthenticated" ? (
-        <div className="sticky left-6 bottom-6 pt-2 rounded-sm flex items-start">
-          <p className="bg-red-100 p-3">
-            You must be signed in to post messages.{" "}
-            <Link
-              className="underline"
-              href={`/api/auth/signin?callbackUrl=${window.location.href}`}
-            >
-              Sign in
-            </Link>
-          </p>
-        </div>
-      ) : (
-        <span />
-      )}
-    </div>
+    <>
+      <div className="h-full w-full flex flex-col gap-6">
+        {messages.length > 0 ? (
+          <ul className="flex flex-col gap-3">
+            {messages.map((message) => (
+              <RoomMessage
+                key={message.id}
+                message={message}
+                isMe={message.from.id === user?.username}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p className="italic">No messages yet</p>
+        )}
+        {session.status === "authenticated" ? (
+          <form onSubmit={handleSubmit} className="sticky bottom-6">
+            <input
+              placeholder="Send message..."
+              className="border border-stone-400 p-3 bg-stone-100 min-w-full rounded"
+              type="text"
+              name="message"
+            ></input>
+          </form>
+        ) : session.status === "unauthenticated" ? (
+          <div className="sticky left-6 bottom-6 pt-2 rounded-sm flex items-start">
+            <p className="bg-red-100 p-3">
+              You must be signed in to post messages.{" "}
+              <Link
+                className="underline"
+                href={`/api/auth/signin?callbackUrl=${window.location.href}`}
+              >
+                Sign in
+              </Link>
+            </p>
+          </div>
+        ) : (
+          <span />
+        )}
+      </div>
+      <ConnectionStatus socket={socket} />
+    </>
   );
 };
