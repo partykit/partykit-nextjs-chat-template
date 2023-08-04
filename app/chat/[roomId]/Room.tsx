@@ -110,7 +110,7 @@ export const Room: React.FC<{
           <p className="italic">No messages yet</p>
         )}
         {session.status === "authenticated" ? (
-          <form onSubmit={handleSubmit} className="sticky bottom-6">
+          <form onSubmit={handleSubmit} className="sticky bottom-4 sm:bottom-6">
             <input
               placeholder="Send message..."
               className="border border-stone-400 p-3 bg-stone-100 min-w-full rounded"
@@ -119,7 +119,7 @@ export const Room: React.FC<{
             ></input>
           </form>
         ) : session.status === "unauthenticated" ? (
-          <div className="sticky left-6 bottom-6 pt-2 rounded-sm flex items-start">
+          <div className="sticky left-4 sm:left-6 bottom-4 sm:bottom-6 pt-2 rounded-sm flex items-start">
             <p className="bg-red-100 p-3">
               You must be signed in to post messages.{" "}
               <Link

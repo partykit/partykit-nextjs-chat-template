@@ -20,7 +20,7 @@ export default function ClearRoomButton(props: { roomId: string }) {
   return (
     <>
       {showConfirmation && (
-        <div className="flex gap-2 justify-start items-center">
+        <div className="flex flex-wrap gap-2 justify-start items-center">
           <button
             className="outline outline-1 outline-red-400 rounded-full px-3 py-1 text-red-400 text-sm hover:bg-red-200 hover:text-red-500 whitespace-nowrap"
             onClick={clearRoom}

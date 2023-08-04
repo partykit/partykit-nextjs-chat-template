@@ -10,10 +10,10 @@ export default async function Header() {
   const user = session?.user as User | null;
 
   return (
-    <header className="z-10 p-6 w-full border-b border-stone-300 absolute sticky top-0 bg-white/80 backdrop-blur">
+    <header className="z-10 p-4 sm:p-6 w-full border-b border-stone-300 absolute sticky top-0 bg-white/80 backdrop-blur">
       <nav className="max-w-7xl m-auto flex justify-between items-center">
         <Link href="/">
-          <h1 className="font-medium my-2">Starter Kit</h1>
+          <h1 className="font-medium my-2">🎈Starter Kit</h1>
         </Link>
         {user && (
           <div className="flex gap-2 items-center">

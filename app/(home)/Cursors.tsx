@@ -16,7 +16,11 @@ export default function Cursors() {
           <OtherCursor id={id} />
         </div>
       ))}
-      <MyCursor />
+      {/*
+        <!-- set overflow-hidden on body to prevent scrolling,
+        otherwise reflecting the touch cursor is out of place. -->
+        <MyCursor />
+        */}
     </div>
   );
 }

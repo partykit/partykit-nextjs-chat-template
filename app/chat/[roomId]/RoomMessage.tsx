@@ -17,7 +17,7 @@ export default function RoomMessage(props: {
 
   if (message.from.id === "system") {
     return (
-      <li className="text-stone-400 flex flex-col justify-center items-center gap-1">
+      <li className="text-stone-400 flex flex-col justify-center items-center text-center gap-1">
         <span className="font-mono text-sm">{message.text}</span>
         <span className="text-xs">{formattedDate}</span>
       </li>
