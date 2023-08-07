@@ -29,7 +29,7 @@ export const getUser = async (room: PartyKitRoom, username: string) => {
 /** Create a new session in the `user` party if the token is valid */
 export const authenticateUser = async (
   room: PartyKitRoom,
-  token: Token,
+  token: Token
 ): Promise<User | null> => {
   if (token.username === AI_USERNAME) {
     return {
@@ -58,14 +58,14 @@ export const authenticateUser = async (
 /** Check that the user exists, and isn't expired */
 export const isSessionValid = (session?: User | null): session is User => {
   return Boolean(
-    session && (!session.expires || session.expires > new Date().toISOString()),
+    session && (!session.expires || session.expires > new Date().toISOString())
   );
 };
 
 /** Authorize token against the NextAuth session endpoint */
 export const getSession = async (
   authServerUrl: string,
-  { csrfToken, sessionToken }: Token,
+  { csrfToken, sessionToken }: Token
 ) => {
   const cookie = [
     `next-auth.csrf-token=${csrfToken}`,

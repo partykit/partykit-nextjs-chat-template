@@ -81,8 +81,6 @@ export default {
     // send the whole list of messages to user when they connect
     connection.send(syncMessage(room.messages ?? []));
 
-
-
     // keep track of connections
     updateRoomList("enter", connection, room);
     connection.addEventListener("close", () =>
@@ -106,7 +104,8 @@ export default {
               systemMessage(
                 "OpenAI API key not configured. AI bot is not available"
               )
-            )};
+            );
+          }
           return;
         }
       }
