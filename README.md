@@ -2,9 +2,18 @@ PartyKit is an open source platform for developing multiplayer, real-time applic
 
 This is a [PartyKit](https://partykit.io) project using [Next.js](https://nextjs.org/) bootstrapped with [`partykit-nextjs-chat-template`](https://github.com/partykit/partykit-nextjs-chat-template).
 
+There's a live hosted demo of this template at [https://partykit-nextjs-chat-template.vercel.app/](https://partykit-nextjs-chat-template.vercel.app/).
+
 ## Getting Started
 
-First, run the development server:
+First, copy the `.env.example` file to `.env` in the project root.
+```bash
+cp .env.example .env
+```
+
+Then, open the created `.env` file and fill in the missing environment variables.
+
+Then, run the development server:
 
 ```bash
 npm install
@@ -34,18 +43,38 @@ This template application demonstrates various use cases of PartyKit.
     - 🖱️ [Cursors.tsx](app/(home)/Cursors.tsx) — Live cursors
     - 🚥 [ConnectionStatus.tsx](app/components/ConnectionStatus.tsx) — Connection status indicator
 
+## Deploy
 
+### Deploy the PartyKit Server on PartyKit
+
+When you're ready to deploy your application to the internet, run the following command to deploy the PartyKit Server:
+
+```bash
+npx partykit deploy
+```
+
+This will deploy the code to your PartyKit account — and if you don't have an account yet, we'll create one as part of the deployment.
+
+In development mode, PartyKit uses your `.env` file to read configuration values. 
+
+For production, you'll need to set the production environment variables:
+
+```bash
+# Set the production URL of your Next.js application for authentication
+npx partykit env add NEXT_APP_URL
+
+# (Optional) Set your OpenAI API key to enable the AI chat participant in production
+npx partykit env add OPENAI_API_KEY
+
+# Redeploy with new variables
+npx partykit deploy
+```
+
+### Deploy the website on Vercel
+
+The easiest way to deploy the Next.js frontend for your PartyKit app is to use the [Vercel Platform](https://vercel.com) from the creators of Next.js.
+
+Remember to configure the environment variables for your website hosting provider!
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+To learn more about PartyKit, take a look at [PartyKit documentation](https://docs.partykit.io).
