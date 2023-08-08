@@ -6,7 +6,7 @@ import type { Message, ChatMessage } from "@/party/utils/message";
 import { getCsrfToken, useSession } from "next-auth/react";
 import PartySocket from "partysocket";
 import Link from "next/link";
-import RoomMessage from "./RoomMessage";
+import RoomMessage from "./components/RoomMessage";
 import ConnectionStatus from "@/app/components/ConnectionStatus";
 
 const identify = async (socket: PartySocket) => {
