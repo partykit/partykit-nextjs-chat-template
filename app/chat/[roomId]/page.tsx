@@ -3,14 +3,9 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import type { User } from "@/party/utils/auth";
 import Link from "next/link";
 import { Room } from "./Room";
-import PresenceBar from "./PresenceBar";
-import ClearRoomButton from "./ClearRoomButton";
-
-const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
-const protocol =
-  host?.startsWith("localhost") || host?.startsWith("127.0.0.1")
-    ? "http"
-    : "https";
+import PresenceBar from "./components/PresenceBar";
+import ClearRoomButton from "./components/ClearRoomButton";
+import { PARTYKIT_HOST, PARTYKIT_URL } from "@/app/env";
 
 const party = "chatroom";
 
@@ -21,14 +16,14 @@ export default async function ChatRoomPage({
 }: {
   params: { roomId: string };
 }) {
-  // fetch initial data on the server
-  const url = `${protocol}://${host}/parties/${party}/${params.roomId}`;
+  // fetch initial data for server rendering
+  const url = `${PARTYKIT_URL}/parties/${party}/${params.roomId}`;
   const res = await fetch(url, { next: { revalidate: 0 } });
   const room = res.status === 404 ? null : await res.json();
+
+  // fetch user session for server rendering
   const session = await getServerSession(authOptions);
   const user = session?.user as User | null;
-
-  console.log("Server rendering", room?.messages);
 
   return (
     <div className="w-full flex flex-col gap-4 justify-between items-start">
@@ -48,7 +43,7 @@ export default async function ChatRoomPage({
           </div>
 
           <Room
-            host={host}
+            host={PARTYKIT_HOST}
             party={party}
             user={user}
             room={params.roomId}

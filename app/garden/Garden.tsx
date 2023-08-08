@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { syncedStore, getYjsDoc } from "@syncedstore/core";
+import { syncedStore, getYjsDoc, Y } from "@syncedstore/core";
 import { useSyncedStore } from "@syncedstore/react";
 import YPartyKitProvider from "y-partykit/provider";
 import {
@@ -13,43 +13,51 @@ import {
 } from "@/party/garden";
 import ConnectionStatus from "../components/ConnectionStatus";
 import Display from "./Display";
-
-const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
+import { PARTYKIT_HOST } from "../env";
 
 const store = syncedStore(yDocShape);
 const doc = getYjsDoc(store);
 
-export default function Garden() {
-  const [starter, setStarter] = useState<Cell>(null);
-  const gardenSize = gardenDimensions.width * gardenDimensions.height;
+/** Connect syncedStore to a PartyKit server, and listen to changes */
+const useSyncState = () => {
+  // react to store chagnes
   const state = useSyncedStore(store);
-  const [socket, setSocket] = useState<WebSocket | null>(null);
 
-  // A list of Cell { lineage, index, emoji } objects
-  const starterEmojis = getStarterEmojis();
-
+  // connect store to the partykit server
   const provider = useMemo(
     () =>
-      new YPartyKitProvider(host, "shared-garden", doc, {
+      new YPartyKitProvider(PARTYKIT_HOST, "shared-garden", doc, {
         party: "garden",
         connect: false,
       }),
     []
   );
 
+  // keep track of current websocket so we can show a connection status
+  const [socket, setSocket] = useState<WebSocket | null>(null);
   useEffect(() => {
     const onStatus = () => setSocket(provider.ws);
     provider.connect();
     provider.on("status", onStatus);
+    setSocket(provider.ws);
+
     return () => {
       provider.off("status", onStatus);
       provider.disconnect();
     };
-  }, []);
-
-  useEffect(() => {
-    setSocket(provider.ws);
   }, [provider]);
+
+  return [state, socket] as const;
+};
+
+export default function Garden() {
+  const [starter, setStarter] = useState<Cell>(null);
+  const gardenSize = gardenDimensions.width * gardenDimensions.height;
+
+  const [state, socket] = useSyncState();
+
+  // A list of Cell { lineage, index, emoji } objects
+  const starterEmojis = getStarterEmojis();
 
   const handlePlantEmoji = (i: number) => {
     if (starter) {
@@ -82,7 +90,7 @@ export default function Garden() {
               <div className="bg-cyan-200 outline outline-2 outline-cyan-300 drop-shadow rounded-lg text-4xl px-6 py-4">
                 {starter.emoji} Plant me!
               </div>
-              <p className="text-sm text-stone-400 mb-2 text-lg">
+              <p className="text-stone-400 mb-2 text-lg">
                 <button
                   className="underline"
                   onClick={() => handleGetStarter()}

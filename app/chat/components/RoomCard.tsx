@@ -4,7 +4,6 @@ import Avatar from "@/app/components/Avatar";
 
 export default function RoomCard(props: { room: RoomInfo }) {
   const { room } = props;
-  console.log(room);
   return (
     <li className="col-span-1 divide-y divide-stone-200">
       <Link href={`/chat/${room.id}`}>

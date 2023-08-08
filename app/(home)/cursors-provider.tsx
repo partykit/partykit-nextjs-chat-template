@@ -4,8 +4,7 @@ import { useState, useEffect, useContext, createContext } from "react";
 import usePartySocket from "partysocket/react";
 import type { PartialCursor, CursorsMap } from "@/party/cursors";
 import ConnectionStatus from "@/app/components/ConnectionStatus";
-
-const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
+import { PARTYKIT_HOST } from "../env";
 
 type CursorsContextType = {
   others: CursorsMap;
@@ -37,7 +36,7 @@ export default function CursorsProvider(props: { children: React.ReactNode }) {
   const [others, setOthers] = useState<CursorsMap>({});
 
   const socket = usePartySocket({
-    host,
+    host: PARTYKIT_HOST,
     party: "cursors",
     room: "shared-cursors",
   });

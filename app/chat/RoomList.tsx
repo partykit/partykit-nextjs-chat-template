@@ -2,10 +2,9 @@
 import { useState } from "react";
 import usePartySocket from "partysocket/react";
 import { RoomInfo, SINGLETON_ROOM_ID } from "@/party/chatRooms";
-import RoomCard from "./RoomCard";
+import RoomCard from "./components/RoomCard";
 import ConnectionStatus from "../components/ConnectionStatus";
-
-const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
+import { PARTYKIT_HOST } from "../env";
 
 export const RoomList: React.FC<{ initialRooms: RoomInfo[] }> = ({
   initialRooms,
@@ -13,8 +12,9 @@ export const RoomList: React.FC<{ initialRooms: RoomInfo[] }> = ({
   // render with initial data, update from websocket as messages arrive
   const [rooms, setRooms] = useState(initialRooms);
 
+  // open a websocket connection to the server
   const socket = usePartySocket({
-    host,
+    host: PARTYKIT_HOST,
     party: "chatrooms",
     room: SINGLETON_ROOM_ID,
     onMessage(event: MessageEvent<string>) {

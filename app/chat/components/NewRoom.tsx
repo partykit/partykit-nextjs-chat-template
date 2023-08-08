@@ -2,12 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent } from "react";
-
-const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
-const protocol =
-  host?.startsWith("localhost") || host?.startsWith("127.0.0.1")
-    ? "http"
-    : "https";
+import { PARTYKIT_URL } from "@/app/env";
 
 export default function NewRoom(props: { slug: string }) {
   const { slug } = props;
@@ -15,7 +10,7 @@ export default function NewRoom(props: { slug: string }) {
 
   const handleClick = async (e: FormEvent) => {
     e.preventDefault();
-    await fetch(`${protocol}://${host}/parties/chatroom/${slug}`, {
+    await fetch(`${PARTYKIT_URL}/parties/chatroom/${slug}`, {
       method: "POST",
     });
     router.push(`/chat/${slug}`);

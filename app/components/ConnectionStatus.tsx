@@ -4,23 +4,19 @@ import { useEffect, useState } from "react";
 import PartySocket from "partysocket";
 
 const readyStates = {
-  0: {
-    // CONNECTING
+  [PartySocket.CONNECTING]: {
     text: "Connecting",
     className: "bg-yellow-500",
   },
-  1: {
-    // OPEN
+  [PartySocket.OPEN]: {
     text: "Connected",
     className: "bg-green-500",
   },
-  2: {
-    // CLOSING
+  [PartySocket.CLOSING]: {
     text: "Closing",
     className: "bg-orange-500",
   },
-  3: {
-    // CLOSED
+  [PartySocket.CLOSED]: {
     text: "Not Connected",
     className: "bg-red-500",
   },

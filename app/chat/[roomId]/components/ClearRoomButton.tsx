@@ -1,18 +1,12 @@
 "use client";
 
 import { useState } from "react";
-
-const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST!;
-const protocol =
-  host?.startsWith("localhost") || host?.startsWith("127.0.0.1")
-    ? "http"
-    : "https";
+import { PARTYKIT_URL } from "@/app/env";
 
 export default function ClearRoomButton(props: { roomId: string }) {
   const [showConfirmation, setShowConfirmation] = useState(false);
-
   const clearRoom = () => {
-    fetch(`${protocol}://${host}/parties/chatroom/${props.roomId}`, {
+    fetch(`${PARTYKIT_URL}/parties/chatroom/${props.roomId}`, {
       method: "DELETE",
     });
     setShowConfirmation(false);
