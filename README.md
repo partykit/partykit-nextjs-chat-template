@@ -1,23 +1,34 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+PartyKit is an open source platform for developing multiplayer, real-time applications.
+
+This is a [PartyKit](https://partykit.io) project using [Next.js](https://nextjs.org/) bootstrapped with [`partykit-nextjs-chat-template`](https://github.com/partykit/partykit-nextjs-chat-template).
 
 ## Getting Started
 
 First, run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
+This will start the PartyKit development server at port **1999**, and a Next.js development server at port **3000**.
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## What's included
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This template application demonstrates various use cases of PartyKit.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+- The [`/app`](app/) directory contains a Next.js 13 application
+- The [`/party`](party/) directory contains a partykit project with the following example parties:
+    - ℹ️ [party/main.ts](party/main.ts) - Simplest possible HTTP and WebSocket server.
+    - 💬 [party/chatRoom.ts](party/chatRoom.ts) — Real-time chat room with persistence 
+    - 👩‍👩‍👦‍👦 [party/chatRooms.ts](party/chatRooms.ts) — Presence and room-to-room communication 
+    - 🙋‍♀️ [party/user.ts](party/user.ts) — User session management and authentication with [NextAuth.js](https://next-auth.js.org/) 
+    - 🤖 [party/ai.ts](party/ai.ts) — AI NPC chatroom participant using LLMs 
+    - 🏡 [party/garden.ts](party/garden.ts) — Shared documents using Y.js 
+    - 🐭 [party/cursors.ts](party/cursors.ts) — Shared cursors
 
+You can think of each party as a little self-contained application.
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

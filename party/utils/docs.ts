@@ -1,19 +1,26 @@
 import { PartyKitRoom } from "partykit/server";
 
 /** A minimalist demo that connects to a room and displays messages */
-export const webSocketConnectorDemo = (room: PartyKitRoom) =>
+export const webSocketConnectorDemo = ({
+  roomId,
+  content,
+}: {
+  roomId: string;
+  content: string;
+}) =>
   html(/* html */ `
   <script>var module = window;</script>
   <script src="https://unpkg.com/partysocket@beta"></script>
 
-  <p>This is room <b>${room.id}</b>.</p>
+  {content}
+  
   <button id="connect">Connect</button>
   <pre id="output"></pre>
 
   <script>
     const socket = new PartySocket({ 
       host: window.location.host, 
-      room: "${room.id}", 
+      room: "${roomId}", 
       startClosed: true 
     });
     socket.addEventListener("message", (event) => {
