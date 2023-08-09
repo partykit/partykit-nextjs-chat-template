@@ -53,6 +53,46 @@ export default function DemoCursors() {
   useEffect(() => {
     if (showDemo) {
       setCursors(makeRandomCursors());
+
+      // Search the HTML of the current page, and change every instance of the word 'genmon' to 'taylor'
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+      const nodes: Text[] = [];
+      while (walker.nextNode()) {
+        nodes.push(walker.currentNode as Text);
+      }
+      nodes.forEach((node) => {
+        if (node.textContent) {
+          node.textContent = node.textContent.replace(/genmon/g, "taylor");
+        }
+      });
+
+      // Now search the HTML again. Whenever there is an img tag with the alt='genmon',
+      // 1. Delete the img tag; 2. Add a style to the parent div: 'background-color: #a8f'
+      const walker2 = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_ELEMENT,
+        null
+      );
+      const nodes2: Element[] = [];
+      while (walker2.nextNode()) {
+        nodes2.push(walker2.currentNode as Element);
+      }
+      nodes2.forEach((node) => {
+        if (node.tagName === "IMG") {
+          const img = node as HTMLImageElement;
+          if (img.alt === "genmon") {
+            const parent = img.parentElement;
+            if (parent) {
+              parent.style.backgroundColor = "#a8f";
+              parent.removeChild(img);
+            }
+          }
+        }
+      });
     }
   }, [showDemo]);
 
