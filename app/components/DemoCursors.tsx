@@ -117,25 +117,23 @@ export default function DemoCursors() {
   }, []);
 
   return (
-    <div>
-      <div
-        className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden"
-        style={{ minHeight: "100dvh" }}
-      >
-        {showDemo && (
-          <div>
-            <div className="absolute top-0 left-0 w-full h-full z-30">
-              {cursors.map((cursor, i) => (
-                <OtherCursorImpl
-                  key={`cursor-${i}`}
-                  cursor={cursor}
-                  windowDimensions={dimensions}
-                />
-              ))}
-            </div>
+    <div
+      className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-30"
+      style={{ minHeight: "100dvh" }}
+    >
+      {showDemo && (
+        <div>
+          <div className="absolute top-0 left-0 w-full h-full z-30">
+            {cursors.map((cursor, i) => (
+              <OtherCursorImpl
+                key={`cursor-${i}`}
+                cursor={cursor}
+                windowDimensions={dimensions}
+              />
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
