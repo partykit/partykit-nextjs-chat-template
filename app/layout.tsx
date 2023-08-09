@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { Providers } from "./components/Providers";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import DemoCursors from "./components/DemoCursors";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <DemoCursors />
         <Providers>
           <div
             className="flex flex-col justify-between relative"

@@ -14,9 +14,11 @@ function getFlagEmoji(countryCode: string) {
   return String.fromCodePoint(...codePoints);
 }
 
-function OtherCursorImpl(props: { cursor: Cursor }) {
-  const { cursor } = props;
-  const { windowDimensions } = useCursors();
+export function OtherCursorImpl(props: {
+  cursor: Cursor;
+  windowDimensions: { width: number; height: number };
+}) {
+  const { cursor, windowDimensions } = props;
   const fill = "#04f";
   const rCursor = useRef<HTMLDivElement>(null);
 
@@ -25,7 +27,7 @@ function OtherCursorImpl(props: { cursor: Cursor }) {
     if (!elm) return;
     elm.style.setProperty(
       "transform",
-      `translate(${point[0]}px, ${point[1]}px)`,
+      `translate(${point[0]}px, ${point[1]}px)`
     );
   }, []);
 
@@ -92,8 +94,10 @@ function OtherCursorImpl(props: { cursor: Cursor }) {
 
 export default function OtherCursor(props: { id: string }) {
   const { id } = props;
-  const { others } = useCursors();
+  const { others, windowDimensions } = useCursors();
   const cursor = others[id];
   if (!cursor) return null;
-  return <OtherCursorImpl cursor={cursor} />;
+  return (
+    <OtherCursorImpl cursor={cursor} windowDimensions={windowDimensions} />
+  );
 }
