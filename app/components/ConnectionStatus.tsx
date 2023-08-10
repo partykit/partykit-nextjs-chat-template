@@ -26,7 +26,9 @@ export default function ConnectionStatus(props: {
   socket: PartySocket | WebSocket | null;
 }) {
   const { socket } = props;
-  const [readyState, setReadyState] = useState<number>(socket?.readyState ?? 3);
+  const [readyState, setReadyState] = useState<number>(
+    socket?.readyState === 1 ? 1 : 0
+  ); //useState<number>(socket?.readyState ?? 0);
   const display = readyStates[readyState as keyof typeof readyStates];
 
   useEffect(() => {
