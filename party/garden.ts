@@ -54,8 +54,6 @@ const lineages = {
 } as Lineages;
 
 export const yDocShape = { garden: {} as Garden };
-//export const store = syncedStore(yDocShape);
-//export const doc = getYjsDoc(store);
 
 export const getStarterEmojis = () => {
   // returns a list of { lineage, emoji } objects where the emoji is the
@@ -78,17 +76,18 @@ export default {
       callback: {
         async handler(ydoc) {
           try {
-            // Stash the ydoc and set an alarm if it isn't empty
+            // We can manipulate the yDoc here... but we want to evolve it independently of the clients.
+            // So we stash it on the room object, and access it later in onAlarm.
+            // NOTE: This is a hack! If the number of websocket connections goes to zero, the room object
+            // will be destroyed, we'll lose the yDoc, and the garden will stop evolving. There are
+            // ways to persist the yDoc, but that's a task for another day.
             if (!(room as YJsRoom).store) {
               const store = syncedStore(yDocShape, ydoc);
-              //console.log("Stashing store", store);
               (room as YJsRoom).store = store;
             }
-            // If there's no alarm set, set one for the next tick
+            // If there's no alarm set already, set one for the next tick
             const alarm = await room.storage.getAlarm();
-            //console.log("alarm", alarm);
             if (alarm === null) {
-              //console.log("Setting alarm");
               await room.storage.setAlarm(new Date().getTime() + GARDEN_TICK);
             }
           } catch (e) {
@@ -99,8 +98,8 @@ export default {
     });
   },
   async onAlarm(room) {
-    //console.log("onAlarm: iterating garden");
-    // iterate the garden and set a new alarm if the garden isn't empty
+    // We've been woken up. Load the yDoc and iterate the garden
+    // NOTE: This is a hack! The store will be empty if the number of websocket connections goes to zero.
     const store = (room as YJsRoom).store;
     Object.entries(store.garden as Garden).forEach(([index, cell]) => {
       if (cell) {
@@ -121,7 +120,8 @@ export default {
       }
     });
 
-    // Set the alarm if the garden isn't empty
+    // Set the alarm if the garden isn't already empty (all lineages tend to an empty garden,
+    // given enough ticks).
     if (store.garden.size > 0) {
       await room.storage.setAlarm(new Date().getTime() + GARDEN_TICK);
     }
