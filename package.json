@@ -24,7 +24,7 @@
     "next": "13.4.10",
     "next-auth": "^4.22.3",
     "openai-edge": "^1.2.2",
-    "partykit": "^0.0.0-1d259bc",
+    "partykit": "^0.0.0-9d532f8",
     "partysocket": "^0.0.0-de4e507",
     "postcss": "8.4.26",
     "random-word-slugs": "^0.1.7",

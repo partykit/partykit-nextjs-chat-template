@@ -8,5 +8,8 @@
     "ai": "party/ai.ts",
     "cursors": "party/cursors.ts",
     "garden": "party/garden.ts"
+  },
+  "serve": {
+    "path": "party/public"
   }
 }

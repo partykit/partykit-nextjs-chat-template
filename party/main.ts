@@ -1,5 +1,5 @@
 import { PartyKitServer } from "partykit/server";
-import { docs, webSocketConnectorDemo } from "./utils/docs";
+import { webSocketConnectorDemo } from "./utils/docs";
 
 /**
  * This is the "main" party of the this example project.
@@ -36,15 +36,5 @@ export default {
 
     // let everyone else in the room know that new client connected
     room.broadcast(info("Someone joined the party! 👋"), [connection.id]);
-  },
-
-  /**
-   * `onFetch` runs in response to any request that does not get routed to the party.
-   *
-   * Here we use it to serve a documentation page when you navigate to http://localhost:1999.
-   * In most PartyKit apps, you won't need to use `onFetch` at all.
-   **/
-  unstable_onFetch(request) {
-    return docs(request);
   },
 } satisfies PartyKitServer;
