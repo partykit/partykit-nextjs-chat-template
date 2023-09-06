@@ -57,6 +57,8 @@ npx partykit deploy
 
 This will deploy the code to your PartyKit account — and if you don't have an account yet, we'll create one as part of the deployment.
 
+### Configure environment variables
+
 In development mode, PartyKit uses your `.env` file to read configuration values. 
 
 For production, you'll need to set the production environment variables:
@@ -71,6 +73,7 @@ npx partykit env add OPENAI_API_KEY
 # Redeploy with new variables
 npx partykit deploy
 ```
+
 
 ### Deploy the website on Vercel
 
