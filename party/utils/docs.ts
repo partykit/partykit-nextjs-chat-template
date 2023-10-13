@@ -10,7 +10,7 @@ export const webSocketConnectorDemo = ({
 }) =>
   html(/* html */ `
   <script>var module = window;</script>
-  <script src="https://unpkg.com/partysocket@beta"></script>
+  <script src="https://unpkg.com/partysocket"></script>
 
   {content}
   

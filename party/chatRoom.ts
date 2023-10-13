@@ -1,8 +1,4 @@
-import type {
-  PartyKitServer,
-  PartyKitRoom,
-  PartyKitConnection,
-} from "partykit/server";
+import type * as Party from "partykit/server";
 import { nanoid } from "nanoid";
 import { User, authenticateUser, isSessionValid } from "./utils/auth";
 import { SINGLETON_ROOM_ID } from "./chatRooms";
@@ -23,28 +19,84 @@ import { json, notFound, ok } from "./utils/response";
 const DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD = 1000 * 60 * 60 * 24; // 24 hours
 
 // track additional information on room and connection objects
-type ChatRoom = PartyKitRoom & { messages?: Message[]; ai?: boolean };
-type ChatConnection = PartyKitConnection & { user?: User | null };
+
+type ChatConnectionState = { user?: User | null };
+
+type ChatConnection = Party.Connection<ChatConnectionState>;
 
 /**
  * This party manages the state and behaviour of an individual chat room
  */
-export default {
+export default class ChatRoomServer implements Party.Server {
+  messages?: Message[];
+  ai?: boolean;
+  constructor(public party: Party.Party) {}
+
+  /** Retrieve messages from room storage and store them on room instance */
+  async ensureLoadMessages() {
+    if (!this.messages) {
+      this.messages =
+        (await this.party.storage.get<Message[]>("messages")) ?? [];
+    }
+    return this.messages;
+  }
+
+  /** Clear room storage */
+  async removeRoomMessages() {
+    await this.party.storage.delete("messages");
+    this.messages = [];
+  }
+
+  /** Remove this room from the room listing party */
+  async removeRoomFromRoomList(id: string) {
+    return this.party.context.parties.chatrooms.get(SINGLETON_ROOM_ID).fetch({
+      method: "POST",
+      body: JSON.stringify({
+        id,
+        action: "delete",
+      }),
+    });
+  }
+
+  /** Request the AI bot party to connect to this room, if not already connected */
+  async ensureAIParticipant() {
+    if (!this.ai) {
+      this.ai = true;
+      this.party.context.parties.ai.get(this.party.id).fetch({
+        method: "POST",
+        body: JSON.stringify({ action: "connect", id: this.party.id }),
+      });
+    }
+  }
+
+  /** Send room presence to the room listing party */
+  async updateRoomList(action: "enter" | "leave", connection: ChatConnection) {
+    return this.party.context.parties.chatrooms.get(SINGLETON_ROOM_ID).fetch({
+      method: "POST",
+      body: JSON.stringify({
+        id: this.party.id,
+        connections: [...this.party.getConnections()].length,
+        user: connection.state?.user,
+        action,
+      }),
+    });
+  }
+
   /**
    * Responds to HTTP requests to /parties/chatroom/:roomId endpoint
    */
-  async onRequest(request, room: ChatRoom) {
-    const messages = await ensureLoadMessages(room);
+  async onRequest(request: Party.Request) {
+    const messages = await this.ensureLoadMessages();
 
     // mark room as created by storing its id in object storage
     if (request.method === "POST") {
-      await room.storage.put("id", room.id);
+      await this.party.storage.put("id", this.party.id);
       return ok();
     }
 
     // return list of messages for server rendering pages
     if (request.method === "GET") {
-      if (await room.storage.get("id")) {
+      if (await this.party.storage.get("id")) {
         return json<SyncMessage>({ type: "sync", messages });
       }
       return notFound();
@@ -52,9 +104,9 @@ export default {
 
     // clear room history
     if (request.method === "DELETE") {
-      await removeRoomMessages(room);
-      room.broadcast(JSON.stringify(<ClearRoomMessage>{ type: "clear" }));
-      room.broadcast(
+      await this.removeRoomMessages();
+      this.party.broadcast(JSON.stringify(<ClearRoomMessage>{ type: "clear" }));
+      this.party.broadcast(
         newMessage({
           from: { id: "system" },
           text: `Room history cleared`,
@@ -69,37 +121,39 @@ export default {
     }
 
     return notFound();
-  },
+  }
 
   /**
    * Executes when a new WebSocket connection is made to the room
    */
-  async onConnect(connection: ChatConnection, room: ChatRoom) {
-    await ensureLoadMessages(room);
-    await ensureAIParticipant(room);
+  async onConnect(connection: ChatConnection) {
+    await this.ensureLoadMessages();
+    await this.ensureAIParticipant();
 
     // send the whole list of messages to user when they connect
-    connection.send(syncMessage(room.messages ?? []));
+    connection.send(syncMessage(this.messages ?? []));
 
     // keep track of connections
-    updateRoomList("enter", connection, room);
+    this.updateRoomList("enter", connection);
     connection.addEventListener("close", () =>
-      updateRoomList("leave", connection, room)
+      this.updateRoomList("leave", connection)
     );
 
     // handle incoming messages from client
     const onUserMessage = async (message: UserMessage) => {
       // handle user authentication
       if (message.type === "identify") {
-        if ((connection.user = await authenticateUser(room, message))) {
-          updateRoomList("enter", connection, room);
+        const user = await authenticateUser(this.party, message);
+        if (user) {
+          connection.setState({ user }); // TODO: should we set to null if not so?
+          this.updateRoomList("enter", connection);
           connection.send(
             newMessage({
               from: { id: "system" },
-              text: `Welcome ${connection.user.username}!`,
+              text: `Welcome ${connection.state!.user!.username}!`,
             })
           );
-          if (!room.env.OPENAI_API_KEY) {
+          if (!this.party.env.OPENAI_API_KEY) {
             connection.send(
               systemMessage(
                 "OpenAI API key not configured. AI bot is not available"
@@ -112,7 +166,7 @@ export default {
 
       // handle user messages
       if (message.type === "new" || message.type === "edit") {
-        const user = connection.user;
+        const user = connection.state!.user;
         if (!isSessionValid(user)) {
           return connection.send(
             systemMessage("You must sign in to send messages to this room")
@@ -132,23 +186,23 @@ export default {
 
         // send new message to all connections
         if (message.type === "new") {
-          room.broadcast(newMessage(payload), []);
-          room.messages!.push(payload);
+          this.party.broadcast(newMessage(payload));
+          this.messages!.push(payload);
         }
 
         // send edited message to all connections
         if (message.type === "edit") {
-          room.broadcast(editMessage(payload), []);
-          room.messages = room.messages!.map((m) =>
+          this.party.broadcast(editMessage(payload), []);
+          this.messages = this.messages!.map((m) =>
             m.id == message.id ? payload : m
           );
         }
         // persist the messages to storage
-        await room.storage.put("messages", room.messages);
+        await this.party.storage.put("messages", this.messages);
 
         // automatically clear the room storage after period of inactivity
-        await room.storage.deleteAlarm();
-        await room.storage.setAlarm(
+        await this.party.storage.deleteAlarm();
+        await this.party.storage.setAlarm(
           new Date().getTime() + DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD
         );
       }
@@ -160,70 +214,19 @@ export default {
         console.log("Error while handling user message", error);
       });
     });
-  },
+  }
 
   /**
    * A scheduled job that executes when the room storage alarm is triggered
    */
-  async onAlarm(room: Omit<ChatRoom, "id">) {
+  async onAlarm() {
     // alarms don't have access to room id, so retrieve it from storage
-    const id = await room.storage.get<string>("id");
+    const id = await this.party.storage.get<string>("id");
     if (id) {
-      await removeRoomMessages(room);
-      await removeRoomFromRoomList({ ...room, id });
+      await this.removeRoomMessages();
+      await this.removeRoomFromRoomList(id);
     }
-  },
-} satisfies PartyKitServer;
-
-/** Retrieve messages from room storage and store them on room instance */
-async function ensureLoadMessages(room: Omit<ChatRoom, "id">) {
-  if (!room.messages) {
-    room.messages = (await room.storage.get<Message[]>("messages")) ?? [];
-  }
-  return room.messages;
-}
-
-/** Request the AI bot party to connect to this room, if not already connected */
-async function ensureAIParticipant(room: ChatRoom) {
-  if (!room.ai) {
-    room.ai = true;
-    room.parties.ai.get(room.id).fetch({
-      method: "POST",
-      body: JSON.stringify({ action: "connect", id: room.id }),
-    });
   }
 }
 
-/** Send room presence to the room listing party */
-async function updateRoomList(
-  action: "enter" | "leave",
-  websocket: ChatConnection,
-  room: ChatRoom
-) {
-  return room.parties.chatrooms.get(SINGLETON_ROOM_ID).fetch({
-    method: "POST",
-    body: JSON.stringify({
-      id: room.id,
-      connections: room.connections.size,
-      user: websocket.user,
-      action,
-    }),
-  });
-}
-
-/** Remove this room from the room listing party */
-async function removeRoomFromRoomList(room: ChatRoom) {
-  return room.parties.chatrooms.get(SINGLETON_ROOM_ID).fetch({
-    method: "POST",
-    body: JSON.stringify({
-      id: room.id,
-      action: "delete",
-    }),
-  });
-}
-
-/** Clear room storage */
-async function removeRoomMessages(room: Omit<ChatRoom, "id">) {
-  await room.storage.delete("messages");
-  room.messages = [];
-}
+ChatRoomServer satisfies Party.Worker;

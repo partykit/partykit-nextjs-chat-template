@@ -1,10 +1,6 @@
-import { PartyKitServer, PartyKitRoom } from "partykit/server";
+import type * as Party from "partykit/server";
 import { onConnect } from "y-partykit";
 import { syncedStore, getYjsDoc } from "@syncedstore/core";
-
-type YJsRoom = PartyKitRoom & {
-  store?: any;
-};
 
 type Lineage = string[];
 
@@ -69,26 +65,30 @@ export const getStarterEmojis = () => {
 
 const GARDEN_TICK = 1500; // milliseconds
 
-export default {
-  onConnect(ws, room) {
-    return onConnect(ws, room, {
+export default class GardenServer implements Party.Server {
+  store: any;
+  constructor(public party: Party.Party) {}
+  onConnect(connection: Party.Connection) {
+    return onConnect(connection, this.party, {
       persist: true,
       callback: {
-        async handler(ydoc) {
+        handler: async (ydoc) => {
           try {
             // We can manipulate the yDoc here... but we want to evolve it independently of the clients.
             // So we stash it on the room object, and access it later in onAlarm.
             // NOTE: This is a hack! If the number of websocket connections goes to zero, the room object
             // will be destroyed, we'll lose the yDoc, and the garden will stop evolving. There are
             // ways to persist the yDoc, but that's a task for another day.
-            if (!(room as YJsRoom).store) {
+            if (!this.store) {
               const store = syncedStore(yDocShape, ydoc);
-              (room as YJsRoom).store = store;
+              this.store = store;
             }
             // If there's no alarm set already, set one for the next tick
-            const alarm = await room.storage.getAlarm();
+            const alarm = await this.party.storage.getAlarm();
             if (alarm === null) {
-              await room.storage.setAlarm(new Date().getTime() + GARDEN_TICK);
+              await this.party.storage.setAlarm(
+                new Date().getTime() + GARDEN_TICK
+              );
             }
           } catch (e) {
             console.error("Callback error", e);
@@ -96,11 +96,11 @@ export default {
         },
       },
     });
-  },
-  async onAlarm(room) {
+  }
+  async onAlarm() {
     // We've been woken up. Load the yDoc and iterate the garden
     // NOTE: This is a hack! The store will be empty if the number of websocket connections goes to zero.
-    const store = (room as YJsRoom).store;
+    const store = this.store;
     Object.entries(store.garden as Garden).forEach(([index, cell]) => {
       if (cell) {
         // Check the lineage and index against the lineages map
@@ -123,7 +123,7 @@ export default {
     // Set the alarm if the garden isn't already empty (all lineages tend to an empty garden,
     // given enough ticks).
     if (store.garden.size > 0) {
-      await room.storage.setAlarm(new Date().getTime() + GARDEN_TICK);
+      await this.party.storage.setAlarm(new Date().getTime() + GARDEN_TICK);
     }
-  },
-} satisfies PartyKitServer;
+  }
+}

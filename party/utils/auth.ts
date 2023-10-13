@@ -1,4 +1,4 @@
-import { PartyKitRoom } from "partykit/server";
+import type * as Party from "partykit/server";
 import { AI_USERNAME } from "../ai";
 
 export type User = {
@@ -16,8 +16,8 @@ export type Token = {
 };
 
 /** Get current session for `username` from the user party */
-export const getUser = async (room: PartyKitRoom, username: string) => {
-  const session = room.parties.user.get(username);
+export const getUser = async (room: Party.Party, username: string) => {
+  const session = room.context.parties.user.get(username);
   const response = (await session
     .fetch({ method: "GET" })
     .then((r) => r.json())) as { user?: User | null };
@@ -28,7 +28,7 @@ export const getUser = async (room: PartyKitRoom, username: string) => {
 
 /** Create a new session in the `user` party if the token is valid */
 export const authenticateUser = async (
-  room: PartyKitRoom,
+  room: Party.Party,
   token: Token
 ): Promise<User | null> => {
   if (token.username === AI_USERNAME) {
@@ -40,7 +40,7 @@ export const authenticateUser = async (
     };
   }
 
-  const session = room.parties.user.get(token.username);
+  const session = room.context.parties.user.get(token.username);
   const request = await session.fetch({
     method: "POST",
     body: JSON.stringify(token),
