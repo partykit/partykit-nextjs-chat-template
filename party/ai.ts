@@ -58,17 +58,6 @@ export default class AIServer implements Party.Server {
 
     // listen to messages from the chatroom
     socket.addEventListener("message", (message) => {
-      // // before first message, let the room know who we are
-      // if (!identified) {
-      //   identified = true;
-      //   socket.send(
-      //     JSON.stringify(<UserMessage>{
-      //       type: "identify",
-      //       username: AI_USERNAME,
-      //     })
-      //   );
-      // }
-
       const data = JSON.parse(message.data as string) as ChatMessage;
       // the room sent us the whole list of messages
       if (data.type === "sync") {
