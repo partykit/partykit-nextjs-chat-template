@@ -1,6 +1,7 @@
 import type * as Party from "partykit/server";
 import { nanoid } from "nanoid";
 import type { Message, ChatMessage, UserMessage } from "./utils/message";
+import type { User } from "./utils/auth";
 import { getChatCompletionResponse, AIMessage } from "./utils/openai";
 import { notFound } from "next/navigation";
 import { error, ok } from "./utils/response";
@@ -15,6 +16,12 @@ Keep your responses short.
 `;
 
 export const AI_USERNAME = "AI";
+export const AI_USER: User = {
+  username: AI_USERNAME,
+  image:
+    "https://pbs.twimg.com/profile_images/1634058036934500352/b4F1eVpJ_400x400.jpg",
+  expires: new Date(2099, 0, 1).toISOString(),
+};
 
 /**
  * A chatroom party can request an AI to join it, and the AI party responds
@@ -26,14 +33,18 @@ export default class AIServer implements Party.Server {
   async onRequest(req: Party.Request) {
     if (req.method !== "POST") return notFound();
 
-    const { id, action } = await req.json<{ id: string; action: string }>();
+    const { roomId, botId, action } = await req.json<{
+      roomId: string;
+      botId: string;
+      action: string;
+    }>();
     if (action !== "connect") return notFound();
 
     if (!this.party.env.OPENAI_API_KEY) return error("OPENAI_API_KEY not set");
 
-    // open a websocket connection to the chatroom
-    const chatRoom = this.party.context.parties.chatroom.get(id);
-    const socket = await chatRoom.socket();
+    // open a websocket connection to the chatroom with the given id
+    const chatRoom = this.party.context.parties.chatroom.get(roomId);
+    const socket = await chatRoom.socket("/?_pk=" + botId);
 
     // simulate an user in the chatroom
     this.simulateUser(socket);
@@ -43,20 +54,20 @@ export default class AIServer implements Party.Server {
   // act as a user in the room
   simulateUser(socket: Party.Connection["socket"]) {
     let messages: Message[] = [];
-    let identified = false;
+    //let identified = false;
 
     // listen to messages from the chatroom
     socket.addEventListener("message", (message) => {
-      // before first message, let the room know who we are
-      if (!identified) {
-        identified = true;
-        socket.send(
-          JSON.stringify(<UserMessage>{
-            type: "identify",
-            username: AI_USERNAME,
-          })
-        );
-      }
+      // // before first message, let the room know who we are
+      // if (!identified) {
+      //   identified = true;
+      //   socket.send(
+      //     JSON.stringify(<UserMessage>{
+      //       type: "identify",
+      //       username: AI_USERNAME,
+      //     })
+      //   );
+      // }
 
       const data = JSON.parse(message.data as string) as ChatMessage;
       // the room sent us the whole list of messages

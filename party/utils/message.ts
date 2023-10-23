@@ -1,5 +1,4 @@
 import { nanoid } from "nanoid";
-import { Token } from "./auth";
 
 export type Sender = {
   id: string;
@@ -42,11 +41,7 @@ export type EditMessage = {
   id: string;
 };
 
-export type IdentifyMessage = {
-  type: "identify";
-} & Token;
-
-export type UserMessage = NewMessage | EditMessage | IdentifyMessage;
+export type UserMessage = NewMessage | EditMessage;
 export type ChatMessage = BroadcastMessage | SyncMessage | ClearRoomMessage;
 
 export const newMessage = (msg: Omit<Message, "id" | "at">) =>
