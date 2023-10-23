@@ -116,8 +116,6 @@ export default class ChatRoomServer implements Party.Server {
         systemMessage("OpenAI API key not configured. AI bot is not available")
       );
     }
-
-    return ok();
   }
 
   /**
@@ -129,9 +127,8 @@ export default class ChatRoomServer implements Party.Server {
     // mark room as created by storing its id in object storage
     if (request.method === "POST") {
       if (new URL(request.url).pathname.endsWith("/auth")) {
-        if (await this.authenticateUser(request)) {
-          return ok();
-        }
+        await this.authenticateUser(request);
+        return ok();
       }
 
       await this.party.storage.put("id", this.party.id);
