@@ -1,5 +1,4 @@
 import type * as Party from "partykit/server";
-import { AI_USERNAME } from "../ai";
 
 export type User = {
   username: string;
@@ -9,52 +8,6 @@ export type User = {
   expires?: string;
 };
 
-export type Token = {
-  sessionToken: string;
-  csrfToken: string;
-  username: string;
-};
-
-/** Get current session for `username` from the user party */
-export const getUser = async (room: Party.Party, username: string) => {
-  const session = room.context.parties.user.get(username);
-  const response = (await session
-    .fetch({ method: "GET" })
-    .then((r) => r.json())) as { user?: User | null };
-
-  // TODO: Validate response
-  return response?.user ?? null;
-};
-
-/** Create a new session in the `user` party if the token is valid */
-export const authenticateUser = async (
-  room: Party.Party,
-  token: Token
-): Promise<User | null> => {
-  if (token.username === AI_USERNAME) {
-    return {
-      username: AI_USERNAME,
-      image:
-        "https://pbs.twimg.com/profile_images/1634058036934500352/b4F1eVpJ_400x400.jpg",
-      expires: new Date(2099, 0, 1).toISOString(),
-    };
-  }
-
-  const session = room.context.parties.user.get(token.username);
-  const request = await session.fetch({
-    method: "POST",
-    body: JSON.stringify(token),
-  });
-
-  // TODO: Validate response
-  if (request.ok) {
-    const response = (await request.json()) as { user: User | null };
-    return response.user;
-  }
-
-  return null;
-};
-
 /** Check that the user exists, and isn't expired */
 export const isSessionValid = (session?: User | null): session is User => {
   return Boolean(
@@ -62,39 +15,31 @@ export const isSessionValid = (session?: User | null): session is User => {
   );
 };
 
-/** Authorize token against the NextAuth session endpoint */
-export const getSession = async (
-  authServerUrl: string,
-  { csrfToken, sessionToken }: Token
-) => {
-  const cookie = [
-    `next-auth.csrf-token=${csrfToken}`,
-    `next-auth.session-token=${sessionToken}`,
-    `__Secure-next-auth.csrf-token=${csrfToken}`,
-    `__Secure-next-auth.session-token=${sessionToken}`,
-  ].join("; ");
+/**
+ * Authenticate the user against the NextAuth API of the server that proxied the request
+ */
+export const getNextAuthSession = async (proxiedRequest: Party.Request) => {
+  const headers = proxiedRequest.headers;
+  const origin = headers.get("origin") ?? "";
+  const cookie = headers.get("cookie") ?? "";
 
-  try {
-    const url = `${authServerUrl}/api/auth/session`;
-    const res = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-        Cookie: cookie,
-      },
-    });
+  const url = `${origin}/api/auth/session`;
 
-    if (res.ok) {
-      const session = await res.json();
-      if (session.user) {
-        return { ...session.user, expires: session.expires };
-      }
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      Cookie: cookie,
+    },
+  });
 
-      return null;
-    } else {
-      throw new Error(await res.text());
+  if (res.ok) {
+    const session = await res.json();
+    if (isSessionValid(session.user)) {
+      return { ...session.user, expires: session.expires };
     }
-  } catch (e) {
-    console.log("Failed to authenticate user", e);
-    throw e;
+  } else {
+    console.error("Failed to authenticate user", await res.text());
   }
+
+  return null;
 };

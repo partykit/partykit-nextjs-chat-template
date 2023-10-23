@@ -3,27 +3,20 @@ import { FormEventHandler, useEffect, useState } from "react";
 import usePartySocket from "partysocket/react";
 import type { User } from "@/party/utils/auth";
 import type { Message, ChatMessage } from "@/party/utils/message";
-import { getCsrfToken, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import PartySocket from "partysocket";
 import Link from "next/link";
 import RoomMessage from "./components/RoomMessage";
 import ConnectionStatus from "@/app/components/ConnectionStatus";
 
 const identify = async (socket: PartySocket) => {
-  // identify user in the partykit room
-  const req = await fetch("/api/session");
-  const res = await req.json();
-  const csrfToken = await getCsrfToken();
-  if (res.sessionToken && res.session) {
-    // note: this could be done as HTTP POST /parties/user/:username
-    socket.send(
-      JSON.stringify({
-        type: "identify",
-        username: res.session.username,
-        sessionToken: res.sessionToken,
-        csrfToken: csrfToken,
-      })
-    );
+  // the ./auth route will authenticate the connection to the partykit room
+  const url = `${window.location.pathname}/auth?_pk=${socket._pk}`;
+  const req = await fetch(url, { method: "POST" });
+
+  if (!req.ok) {
+    const res = await req.text();
+    console.error("Failed to authenticate connection to PartyKit room", res);
   }
 };
 

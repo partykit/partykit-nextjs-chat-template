@@ -32,7 +32,6 @@ The [`/party`](party/) directory contains partykit servers with the following ex
 - ℹ️ [main.ts](party/main.ts) — Simplest possible HTTP and WebSocket server.
 - 💬 [chatRoom.ts](party/chatRoom.ts) — Real-time chat room with persistence 
 - 👩‍👩‍👦‍👦 [chatRooms.ts](party/chatRooms.ts) — Presence and room-to-room communication 
-- 🙋‍♀️ [user.ts](party/user.ts) — User session management and authentication with [NextAuth.js](https://next-auth.js.org/) 
 - 🤖 [ai.ts](party/ai.ts) — AI NPC chatroom participant using LLMs 
 - 🏡 [garden.ts](party/garden.ts) — Shared documents using [Y.js](https://yjs.dev) 
 - 🐭 [cursors.ts](party/cursors.ts) — Shared cursors

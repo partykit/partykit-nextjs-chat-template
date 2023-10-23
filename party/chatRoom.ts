@@ -1,6 +1,6 @@
 import type * as Party from "partykit/server";
 import { nanoid } from "nanoid";
-import { User, authenticateUser, isSessionValid } from "./utils/auth";
+import { User, getNextAuthSession, isSessionValid } from "./utils/auth";
 import { SINGLETON_ROOM_ID } from "./chatRooms";
 import type {
   Message,
@@ -14,7 +14,8 @@ import {
   syncMessage,
   systemMessage,
 } from "./utils/message";
-import { json, notFound, ok } from "./utils/response";
+import { error, json, notFound, ok } from "./utils/response";
+import { AI_USER } from "./ai";
 
 const DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD = 1000 * 60 * 60 * 24; // 24 hours
 
@@ -29,7 +30,7 @@ type ChatConnection = Party.Connection<ChatConnectionState>;
  */
 export default class ChatRoomServer implements Party.Server {
   messages?: Message[];
-  ai?: boolean;
+  botId?: string;
   constructor(public party: Party.Party) {}
 
   /** Retrieve messages from room storage and store them on room instance */
@@ -60,11 +61,15 @@ export default class ChatRoomServer implements Party.Server {
 
   /** Request the AI bot party to connect to this room, if not already connected */
   async ensureAIParticipant() {
-    if (!this.ai) {
-      this.ai = true;
+    if (!this.botId) {
+      this.botId = nanoid();
       this.party.context.parties.ai.get(this.party.id).fetch({
         method: "POST",
-        body: JSON.stringify({ action: "connect", id: this.party.id }),
+        body: JSON.stringify({
+          action: "connect",
+          roomId: this.party.id,
+          botId: this.botId,
+        }),
       });
     }
   }
@@ -82,6 +87,37 @@ export default class ChatRoomServer implements Party.Server {
     });
   }
 
+  async authenticateUser(proxiedRequest: Party.Request) {
+    // find the connection
+    const id = new URL(proxiedRequest.url).searchParams.get("_pk");
+    const connection = id && this.party.getConnection(id);
+    if (!connection) {
+      return error(`No connection with id ${id}`);
+    }
+
+    // authenticate the user
+    const session = await getNextAuthSession(proxiedRequest);
+    if (!session) {
+      return error(`No session found`);
+    }
+
+    this.updateRoomList("enter", connection);
+
+    connection.setState({ user: session });
+    connection.send(
+      newMessage({
+        from: { id: "system" },
+        text: `Welcome ${session.username}!`,
+      })
+    );
+
+    if (!this.party.env.OPENAI_API_KEY) {
+      connection.send(
+        systemMessage("OpenAI API key not configured. AI bot is not available")
+      );
+    }
+  }
+
   /**
    * Responds to HTTP requests to /parties/chatroom/:roomId endpoint
    */
@@ -90,6 +126,13 @@ export default class ChatRoomServer implements Party.Server {
 
     // mark room as created by storing its id in object storage
     if (request.method === "POST") {
+      // respond to authentication requests proxied through the app's
+      // rewrite rules. See next.config.js in project root.
+      if (new URL(request.url).pathname.endsWith("/auth")) {
+        await this.authenticateUser(request);
+        return ok();
+      }
+
       await this.party.storage.put("id", this.party.id);
       return ok();
     }
@@ -130,90 +173,69 @@ export default class ChatRoomServer implements Party.Server {
     await this.ensureLoadMessages();
     await this.ensureAIParticipant();
 
+    // if user is the bot we invited, mark them as an AI user
+    if (connection.id === this.botId) {
+      connection.setState({ user: AI_USER });
+    }
+
     // send the whole list of messages to user when they connect
     connection.send(syncMessage(this.messages ?? []));
 
     // keep track of connections
     this.updateRoomList("enter", connection);
-    connection.addEventListener("close", () =>
-      this.updateRoomList("leave", connection)
-    );
+  }
 
-    // handle incoming messages from client
-    const onUserMessage = async (message: UserMessage) => {
-      // handle user authentication
-      if (message.type === "identify") {
-        const user = await authenticateUser(this.party, message);
-        if (user) {
-          connection.setState({ user }); // TODO: should we set to null if not so?
-          this.updateRoomList("enter", connection);
-          connection.send(
-            newMessage({
-              from: { id: "system" },
-              text: `Welcome ${connection.state!.user!.username}!`,
-            })
-          );
-          if (!this.party.env.OPENAI_API_KEY) {
-            connection.send(
-              systemMessage(
-                "OpenAI API key not configured. AI bot is not available"
-              )
-            );
-          }
-          return;
-        }
-      }
-
-      // handle user messages
-      if (message.type === "new" || message.type === "edit") {
-        const user = connection.state!.user;
-        if (!isSessionValid(user)) {
-          return connection.send(
-            systemMessage("You must sign in to send messages to this room")
-          );
-        }
-
-        if (message.text.length > 1000) {
-          return connection.send(systemMessage("Message too long"));
-        }
-
-        const payload = <Message>{
-          id: message.id ?? nanoid(),
-          from: { id: user.username, image: user.image },
-          text: message.text,
-          at: Date.now(),
-        };
-
-        // send new message to all connections
-        if (message.type === "new") {
-          this.party.broadcast(newMessage(payload));
-          this.messages!.push(payload);
-        }
-
-        // send edited message to all connections
-        if (message.type === "edit") {
-          this.party.broadcast(editMessage(payload), []);
-          this.messages = this.messages!.map((m) =>
-            m.id == message.id ? payload : m
-          );
-        }
-        // persist the messages to storage
-        await this.party.storage.put("messages", this.messages);
-
-        // automatically clear the room storage after period of inactivity
-        await this.party.storage.deleteAlarm();
-        await this.party.storage.setAlarm(
-          new Date().getTime() + DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD
+  async onMessage(
+    messageString: string,
+    connection: Party.Connection<{ user: User | null }>
+  ) {
+    const message = JSON.parse(messageString) as UserMessage;
+    // handle user messages
+    if (message.type === "new" || message.type === "edit") {
+      const user = connection.state?.user;
+      if (!isSessionValid(user)) {
+        return connection.send(
+          systemMessage("You must sign in to send messages to this room")
         );
       }
-    };
 
-    connection.addEventListener("message", (event) => {
-      const message = JSON.parse(event.data as string) as UserMessage;
-      onUserMessage(message).catch((error) => {
-        console.log("Error while handling user message", error);
-      });
-    });
+      if (message.text.length > 1000) {
+        return connection.send(systemMessage("Message too long"));
+      }
+
+      const payload = <Message>{
+        id: message.id ?? nanoid(),
+        from: { id: user.username, image: user.image },
+        text: message.text,
+        at: Date.now(),
+      };
+
+      // send new message to all connections
+      if (message.type === "new") {
+        this.party.broadcast(newMessage(payload));
+        this.messages!.push(payload);
+      }
+
+      // send edited message to all connections
+      if (message.type === "edit") {
+        this.party.broadcast(editMessage(payload), []);
+        this.messages = this.messages!.map((m) =>
+          m.id == message.id ? payload : m
+        );
+      }
+      // persist the messages to storage
+      await this.party.storage.put("messages", this.messages);
+
+      // automatically clear the room storage after period of inactivity
+      await this.party.storage.deleteAlarm();
+      await this.party.storage.setAlarm(
+        new Date().getTime() + DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD
+      );
+    }
+  }
+
+  async onClose(connection: Party.Connection) {
+    this.updateRoomList("leave", connection);
   }
 
   /**
