@@ -1,4 +1,4 @@
-import { PartyKitRoom, PartyKitServer } from "partykit/server";
+import type * as Party from "partykit/server";
 import { User } from "./utils/auth";
 import { json, notFound } from "./utils/response";
 
@@ -35,92 +35,93 @@ export type RoomInfo = {
   }[];
 };
 
-export default {
-  onMessage() {
-    // defining an onMessage callback opts the room into using a hibernation
-    // mode, which allows for a higher number of concurrent connections
-  },
+export default class ChatRoomsServer implements Party.Server {
+  options: Party.ServerOptions = {
+    hibernate: true,
+    // this opts the chat room into hibernation mode, which
+    // allows for a higher number of concurrent connections
+  };
 
-  async onConnect(connection, room) {
+  constructor(public party: Party.Party) {}
+
+  async onConnect(connection: Party.Connection) {
     // when a websocket connection is established, send them a list of rooms
-    connection.send(JSON.stringify(await getActiveRooms(room)));
-  },
+    connection.send(JSON.stringify(await this.getActiveRooms()));
+  }
 
-  async onRequest(req, room) {
+  async onRequest(req: Party.Request) {
     // we only allow one instance of chatRooms party
-    if (room.id !== SINGLETON_ROOM_ID) return notFound();
+    if (this.party.id !== SINGLETON_ROOM_ID) return notFound();
 
     // Clients fetch list of rooms for server rendering pages via HTTP GET
-    if (req.method === "GET") return json(await getActiveRooms(room));
+    if (req.method === "GET") return json(await this.getActiveRooms());
 
     // Chatrooms report their connections via HTTP POST
     // update room info and notify all connected clients
     if (req.method === "POST") {
-      const roomList = await updateRoomInfo(req, room);
-      room.broadcast(JSON.stringify(roomList));
+      const roomList = await this.updateRoomInfo(req);
+      this.party.broadcast(JSON.stringify(roomList));
       return json(roomList);
     }
 
     // admin api for clearing all rooms (not used in UI)
     if (req.method === "DELETE") {
-      await room.storage.deleteAll();
+      await this.party.storage.deleteAll();
       return json({ message: "All room history cleared" });
     }
 
     return notFound();
-  },
-} satisfies PartyKitServer;
-
-/** Fetches list of active rooms */
-async function getActiveRooms(room: PartyKitRoom): Promise<RoomInfo[]> {
-  const rooms = await room.storage.list<RoomInfo>();
-  return [...rooms.values()];
-}
-
-/** Updates list of active rooms with information received from chatroom */
-async function updateRoomInfo(req: Request, room: PartyKitRoom) {
-  const update = (await req.json()) as
-    | RoomInfoUpdateRequest
-    | RoomDeleteRequest;
-
-  if (update.action === "delete") {
-    await room.storage.delete(update.id);
-    return getActiveRooms(room);
   }
-
-  const persistedInfo = await room.storage.get<RoomInfo>(update.id);
-  if (!persistedInfo && update.action === "leave") {
-    return getActiveRooms(room);
+  /** Fetches list of active rooms */
+  async getActiveRooms(): Promise<RoomInfo[]> {
+    const rooms = await this.party.storage.list<RoomInfo>();
+    return [...rooms.values()];
   }
+  /** Updates list of active rooms with information received from chatroom */
+  async updateRoomInfo(req: Party.Request) {
+    const update = (await req.json()) as
+      | RoomInfoUpdateRequest
+      | RoomDeleteRequest;
 
-  const info = persistedInfo ?? {
-    id: update.id,
-    connections: 0,
-    users: [],
-  };
-
-  info.connections = update.connections;
-
-  const user = update.user;
-  if (user) {
-    if (update.action === "enter") {
-      // bump user to the top of the list on entry
-      info.users = info.users.filter((u) => u.username !== user.username);
-      info.users.unshift({
-        username: user.username,
-        image: user.image,
-        joinedAt: new Date().toISOString(),
-        present: true,
-      });
-    } else {
-      info.users = info.users.map((u) =>
-        u.username === user.username
-          ? { ...u, present: false, leftAt: new Date().toISOString() }
-          : u
-      );
+    if (update.action === "delete") {
+      await this.party.storage.delete(update.id);
+      return this.getActiveRooms();
     }
-  }
 
-  await room.storage.put(update.id, info);
-  return getActiveRooms(room);
+    const persistedInfo = await this.party.storage.get<RoomInfo>(update.id);
+    if (!persistedInfo && update.action === "leave") {
+      return this.getActiveRooms();
+    }
+
+    const info = persistedInfo ?? {
+      id: update.id,
+      connections: 0,
+      users: [],
+    };
+
+    info.connections = update.connections;
+
+    const user = update.user;
+    if (user) {
+      if (update.action === "enter") {
+        // bump user to the top of the list on entry
+        info.users = info.users.filter((u) => u.username !== user.username);
+        info.users.unshift({
+          username: user.username,
+          image: user.image,
+          joinedAt: new Date().toISOString(),
+          present: true,
+        });
+      } else {
+        info.users = info.users.map((u) =>
+          u.username === user.username
+            ? { ...u, present: false, leftAt: new Date().toISOString() }
+            : u
+        );
+      }
+    }
+
+    await this.party.storage.put(update.id, info);
+    return this.getActiveRooms();
+  }
 }
