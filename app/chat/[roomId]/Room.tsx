@@ -10,10 +10,9 @@ import RoomMessage from "./components/RoomMessage";
 import ConnectionStatus from "@/app/components/ConnectionStatus";
 
 const identify = async (socket: PartySocket) => {
-  const req = await fetch(
-    `/api/session?room=${socket.room}&_pk=${socket._pk}`,
-    { method: "POST" }
-  );
+  // the ./auth route will authenticate the connection to the partykit room
+  const url = `${window.location.pathname}/auth?room=${socket.room}&_pk=${socket._pk}`;
+  const req = await fetch(url, { method: "POST" });
 
   if (!req.ok) {
     console.error("Failed to authenticate connection to PartyKit room", req);
