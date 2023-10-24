@@ -3,11 +3,10 @@
   "name": "partykit-nextjs-chat-template",
   "compatibilityDate": "2023-10-13",
   "parties": {
+    "ai": "party/ai.ts",
     "chatroom": "party/chatRoom.ts",
     "chatrooms": "party/chatRooms.ts",
-    "ai": "party/ai.ts",
-    "cursors": "party/cursors.ts",
-    "garden": "party/garden.ts"
+    "cursors": "party/cursors.ts"
   },
   "serve": {
     "path": "party/public"

@@ -5,16 +5,7 @@ export default function Footer() {
     <footer className="py-4 px-4 sm:px-6 w-full">
       <div className="pt-4 max-w-7xl m-auto text-sm text-stone-400 flex flex-row justify-between">
         <div className="flex flex-col gap-1 justify-start">
-          <h2>
-            PartyKit Next.js Starter Kit{" "}
-            <span className="whitespace-nowrap">
-              (also a{" "}
-              <Link href="/garden" className="underline">
-                tiny garden
-              </Link>
-            </span>
-            )
-          </h2>
+          <h2>PartyKit Next.js Starter Kit</h2>
           <p>
             Built with{" "}
             <Link href="https://nextjs.org" className="underline">
