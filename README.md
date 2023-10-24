@@ -60,8 +60,6 @@ In development mode, PartyKit uses your `.env` file to read configuration values
 For production, you'll need to set the production environment variables:
 
 ```bash
-# Set the production URL of your Next.js application for authentication
-npx partykit env add NEXT_APP_URL
 
 # (Optional) Set your OpenAI API key to enable the AI chat participant in production
 npx partykit env add OPENAI_API_KEY
@@ -75,7 +73,11 @@ npx partykit deploy
 
 The easiest way to deploy the Next.js frontend for your PartyKit app is to use the [Vercel Platform](https://vercel.com) from the creators of Next.js.
 
-Remember to configure the environment variables for your website hosting provider!
+When you deploy the site to Vercel, remember to add the environment variables from your `.env` file in your Vercel project dashboard. 
+
+The `NEXT_PUBLIC_PARTYKIT_HOST` variable should be set to be the domain of your partykit server, e.g. `https://my-project.my-username.partykit.dev`. The domain name will be displayed when you deploy the PartyKit project.
+
+
 ## Learn More
 
 To learn more about PartyKit, take a look at [PartyKit documentation](https://docs.partykit.io).
