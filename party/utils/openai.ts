@@ -17,6 +17,7 @@ export async function getChatCompletionResponse(
     new Configuration({
       organization: env.OPENAI_API_ORGANIZATION,
       apiKey: env.OPENAI_API_KEY,
+      basePath: env.OPENAI_API_BASE_PATH,
     })
   );
 
