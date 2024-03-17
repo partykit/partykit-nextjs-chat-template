@@ -75,7 +75,7 @@ The easiest way to deploy the Next.js frontend for your PartyKit app is to use t
 
 When you deploy the site to Vercel, remember to add the environment variables from your `.env` file in your Vercel project dashboard. 
 
-The `NEXT_PUBLIC_PARTYKIT_HOST` variable should be set to be the domain of your partykit server, e.g. `https://my-project.my-username.partykit.dev`. The domain name will be displayed when you deploy the PartyKit project.
+The `NEXT_PUBLIC_PARTYKIT_HOST` variable should be set to be the domain of your partykit server, e.g. `my-project.my-username.partykit.dev`. The domain name will be displayed when you deploy the PartyKit project.
 
 
 ## Learn More
